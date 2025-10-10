@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试</title>
+</head>
+<body>
+    <h1>API测试</h1>
+    <button onclick="testAPI()">测试科室API</button>
+    <div id="result"></div>
+
+    <script src="config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function testAPI() {
+            try {
+                console.log('API_CONFIG.baseURL:', API_CONFIG.baseURL);
+                console.log('开始API调用...');
+
+                const response = await api.get('/departments?type=laboratory');
+                console.log('API响应:', response);
+
+                document.getElementById('result').innerHTML = `
+                    <h3>API测试结果:</h3>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('API调用失败:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>API调用失败:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

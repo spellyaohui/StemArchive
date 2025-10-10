@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置验证测试</title>
+</head>
+<body>
+    <h1>配置验证测试</h1>
+    <div id="results"></div>
+
+    <script src="config.js"></script>
+    <script>
+        // 验证CONFIG对象是否正确创建
+        const results = document.getElementById('results');
+
+        function addResult(test, status, details = '') {
+            const div = document.createElement('div');
+            div.innerHTML = `<strong>${test}:</strong> <span style="color: ${status === '✅' ? 'green' : 'red'}">${status}</span> ${details}`;
+            results.appendChild(div);
+        }
+
+        // 测试基本配置
+        try {
+            addResult('CONFIG对象存在', window.CONFIG ? '✅' : '❌');
+            addResult('API配置存在', window.CONFIG.api ? '✅' : '❌');
+            addResult('第三方API配置存在', window.CONFIG.examinationAPI ? '✅' : '❌');
+            addResult('应用配置存在', window.CONFIG.app ? '✅' : '❌');
+
+            if (window.CONFIG) {
+                addResult('API BaseURL', '✅', window.CONFIG.api.baseURL);
+                addResult('第三方API BaseURL', '✅', window.CONFIG.examinationAPI.baseURL);
+                addResult('环境检测', '✅', window.CONFIG.app.environment);
+            }
+
+            // 测试API调用（模拟）
+            const testURL = `${window.CONFIG.api.baseURL}/statistics/monthly`;
+            addResult('API URL构建', '✅', testURL);
+
+        } catch (error) {
+            addResult('配置加载', '❌', error.message);
+        }
+    </script>
+</body>
+</html>

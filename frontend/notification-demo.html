@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示系统演示</title>
+    <script src="css/fontawesome/fontawesome-free-6.4.0-web/js/all.js"></script>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">提示系统演示</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- 基础提示 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">基础提示</h3>
+                <button onclick="NotificationHelper.success('操作成功！')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-2 block w-full">成功提示</button>
+                <button onclick="NotificationHelper.error('操作失败！')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mb-2 block w-full">错误提示</button>
+                <button onclick="NotificationHelper.warning('请注意！')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mb-2 block w-full">警告提示</button>
+                <button onclick="NotificationHelper.info('信息提示')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 block w-full">信息提示</button>
+            </div>
+
+            <!-- 专用提示 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">专用提示</h3>
+                <button onclick="NotificationHelper.validationError('输入数据格式不正确')" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 mb-2 block w-full">验证错误</button>
+                <button onclick="NotificationHelper.networkError('网络连接失败', () => alert('重试功能'))" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 mb-2 block w-full">网络错误</button>
+                <button onclick="NotificationHelper.databaseError('数据库连接失败')" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mb-2 block w-full">数据库错误</button>
+                <button onclick="NotificationHelper.permissionError('权限不足')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 block w-full">权限错误</button>
+            </div>
+
+            <!-- 状态提示 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">状态提示</h3>
+                <button onclick="showLoading()" class="bg-cyan-500 text-white px-4 py-2 rounded hover:bg-cyan-600 mb-2 block w-full">加载中</button>
+                <button onclick="showSaving()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-2 block w-full">保存中</button>
+                <button onclick="showSearching()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-2 block w-full">搜索中</button>
+                <button onclick="NotificationHelper.complete('操作完成！')" class="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 block w-full">完成</button>
+            </div>
+
+            <!-- 医疗相关 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">医疗相关</h3>
+                <button onclick="NotificationHelper.medical('检验数据已更新')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mb-2 block w-full">医疗信息</button>
+                <button onclick="NotificationHelper.appointment('预约已确认')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-2 block w-full">预约信息</button>
+                <button onclick="NotificationHelper.tip('提示：可以通过调阅按钮快速选择体检ID')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mb-2 block w-full">操作提示</button>
+                <button onclick="NotificationHelper.help('如需帮助，请查看用户手册', () => alert('打开帮助文档'))" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 block w-full">帮助信息</button>
+            </div>
+
+            <!-- 自定义提示 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">自定义提示</h3>
+                <button onclick="showCustomNotification()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded hover:from-purple-600 hover:to-pink-600 mb-2 block w-full">自定义提示</button>
+                <button onclick="showPersistentNotification()" class="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded hover:from-red-600 hover:to-orange-600 block w-full">持久化提示</button>
+            </div>
+
+            <!-- 清除按钮 -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold mb-3">控制</h3>
+                <button onclick="clearAllNotifications()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 block w-full">清除所有提示</button>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white p-6 rounded-lg shadow">
+            <h3 class="font-semibold mb-3">使用说明</h3>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                <li>所有提示都支持自动关闭（除了持久化提示）</li>
+                <li>错误和警告提示显示时间较长</li>
+                <li>网络错误提示包含重试按钮</li>
+                <li>加载和保存状态提示会持续显示直到手动关闭</li>
+                <li>自定义提示支持标题、操作按钮和持久化选项</li>
+                <li>所有提示都可以通过右上角的关闭按钮手动关闭</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentLoadingNotification = null;
+        let currentSavingNotification = null;
+        let currentSearchingNotification = null;
+
+        function showLoading() {
+            if (currentLoadingNotification) {
+                currentLoadingNotification.remove();
+            }
+            currentLoadingNotification = NotificationHelper.loading('正在加载大量数据，请耐心等待...');
+        }
+
+        function showSaving() {
+            if (currentSavingNotification) {
+                currentSavingNotification.remove();
+            }
+            currentSavingNotification = NotificationHelper.saving('正在保存数据到数据库...');
+        }
+
+        function showSearching() {
+            if (currentSearchingNotification) {
+                currentSearchingNotification.remove();
+            }
+            currentSearchingNotification = NotificationHelper.searching('正在搜索相关记录...');
+        }
+
+        function showCustomNotification() {
+            showNotification('这是一个自定义的复杂通知，包含标题、详细信息和操作按钮', 'info', 5000, {
+                title: '自定义通知标题',
+                actionText: '执行操作',
+                actionCallback: () => {
+                    alert('自定义操作被执行了！');
+                },
+                persistent: false
+            });
+        }
+
+        function showPersistentNotification() {
+            showNotification('这是一个持久化通知，不会自动关闭，需要手动关闭', 'warning', 0, {
+                title: '重要提醒',
+                actionText: '我知道了',
+                actionCallback: () => {
+                    alert('用户已确认');
+                },
+                persistent: true
+            });
+        }
+
+        function clearAllNotifications() {
+            const notifications = document.querySelectorAll('.notification');
+            notifications.forEach(notification => {
+                notification.remove();
+            });
+            currentLoadingNotification = null;
+            currentSavingNotification = null;
+            currentSearchingNotification = null;
+        }
+    </script>
+</body>
+</html>

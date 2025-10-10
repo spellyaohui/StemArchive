@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报告查看 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-dna text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">干细胞治疗档案管理系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="dashboard.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>仪表板
+                    </a>
+                    <a href="customers.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-users mr-2"></i>检客管理
+                    </a>
+                    <a href="health-data.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-heartbeat mr-2"></i>健康数据
+                    </a>
+                    <a href="stem-cell.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-microscope mr-2"></i>干细胞管理
+                    </a>
+                    <a href="reports.html" class="nav-link hover:text-blue-200 transition-colors text-blue-200">
+                        <i class="fas fa-file-medical mr-2"></i>报告查看
+                    </a>
+                    <a href="statistics.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>统计分析
+                    </a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:text-blue-200 transition-colors">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="username">用户</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>个人资料
+                            </a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>系统设置
+                            </a>
+                            <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">报告查看</h2>
+            <p class="text-gray-600">查看和生成各类医疗报告和统计分析报告</p>
+        </div>
+
+        <!-- 报告类型选择 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button class="report-type-btn bg-blue-100 text-blue-700 p-4 rounded-lg hover:bg-blue-200 transition-colors text-center" data-tab="comparison">
+                    <i class="fas fa-file-medical text-2xl mb-2"></i>
+                    <p class="font-medium">对比报告</p>
+                </button>
+                <button class="report-type-btn bg-green-100 text-green-700 p-4 rounded-lg hover:bg-green-200 transition-colors text-center" data-tab="treatment">
+                    <i class="fas fa-chart-line text-2xl mb-2"></i>
+                    <p class="font-medium">治疗总结</p>
+                </button>
+                <button class="report-type-btn bg-purple-100 text-purple-700 p-4 rounded-lg hover:bg-purple-200 transition-colors text-center" data-tab="health">
+                    <i class="fas fa-file-alt text-2xl mb-2"></i>
+                    <p class="font-medium">健康评估</p>
+                </button>
+                <button class="report-type-btn bg-orange-100 text-orange-700 p-4 rounded-lg hover:bg-orange-200 transition-colors text-center" data-tab="single">
+                    <i class="fas fa-file-download text-2xl mb-2"></i>
+                    <p class="font-medium">单次报告</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- 报告生成区域 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 id="reportTitle" class="text-lg font-semibold text-gray-800 mb-4">生成报告</h3>
+            <form id="reportForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">搜索检客</label>
+                        <div class="relative">
+                            <input type="text" id="customerSearchInput" placeholder="输入姓名或身份证号搜索..."
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="button" id="customerSearchBtn" class="absolute right-2 top-2 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <!-- 搜索结果容器 -->
+                        <div id="customerSearchResults" class="hidden mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto bg-white shadow-lg">
+                            <!-- 动态加载搜索结果 -->
+                        </div>
+                        <!-- 选中的检客信息 -->
+                        <div id="selectedCustomerInfo" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-medium text-green-800" id="selectedCustomerName"></span>
+                                    <span class="text-green-600 text-sm ml-2" id="selectedCustomerIdCard"></span>
+                                </div>
+                                <button type="button" id="clearCustomerBtn" class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">报告类型</label>
+                        <select id="reportTypeSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="comparison">对比报告</option>
+                            <option value="treatment">治疗总结</option>
+                            <option value="health">健康评估</option>
+                            <option value="single">单次报告</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" id="dateRangeLabel">数据日期范围</label>
+                        <div class="flex space-x-2 items-center">
+                            <input type="date" id="dateRangeStart"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   style="font-family: inherit; font-size: inherit;">
+                            <span class="text-gray-500">至</span>
+                            <input type="date" id="dateRangeEnd"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   style="font-family: inherit; font-size: inherit;">
+                            <button type="button" id="dateRangeSearchBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-search mr-2"></i>搜索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 单次报告专用 - 体检ID选择区域 -->
+                <div id="singleReportSection" class="hidden">
+                    <div class="border-t pt-4">
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择体检报告</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择体检报告</label>
+                                <select id="examSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                                    <option value="">请先搜索体检报告</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对比报告专用区域 -->
+                <div id="comparisonReportSection" class="hidden">
+                    <div class="border-t pt-4">
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择多个体检报告进行对比分析</h4>
+                        <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-amber-600 mr-2"></i>
+                                <span class="text-amber-800 text-sm">请选择2-3个体检报告进行对比分析（最多可选择3个）</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择体检报告（可多选）</label>
+                                <div id="comparisonExamList" class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                    <div class="text-center text-gray-500 py-4">
+                                        <i class="fas fa-search text-2xl mb-2"></i>
+                                        <p>请先搜索体检报告</p>
+                                    </div>
+                                </div>
+                                <div id="selectedComparisonExams" class="mt-3 hidden">
+                                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-medium text-blue-800">已选择的体检报告：</span>
+                                            <button type="button" id="clearComparisonSelections" class="text-red-500 hover:text-red-700 text-sm">
+                                                <i class="fas fa-times mr-1"></i>清空选择
+                                            </button>
+                                        </div>
+                                        <div id="selectedComparisonList" class="space-y-2">
+                                            <!-- 动态显示已选择的体检报告 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 健康评估专用区域 -->
+                <div id="healthAssessmentSection" class="hidden">
+                    <div class="border-t pt-4">
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择体检报告进行健康评估</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择体检报告</label>
+                                <select id="healthExamSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                                    <option value="">请先搜索体检报告</option>
+                                </select>
+                            </div>
+                            <div id="healthAssessmentStatus" class="hidden">
+                                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                        <span id="healthStatusText" class="text-blue-800"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="clearReportForm" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-times mr-2"></i>清空
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-file-export mr-2"></i>生成报告
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 历史报告列表 -->
+        <div id="historyReportsSection" class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">历史报告</h3>
+            <div id="reportsList" class="space-y-3">
+                <!-- 动态加载 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 干细胞治疗档案管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/reports.js"></script>
+</body>
+</html>

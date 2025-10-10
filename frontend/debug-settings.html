@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试系统设置</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+        nav { background: #333; color: white; padding: 1rem; }
+        nav h1 { margin: 0; font-size: 1.5rem; }
+        .debug { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { margin: 5px; padding: 8px 12px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav>
+        <h1>默认系统名称</h1>
+    </nav>
+
+    <div class="container">
+        <h1>系统设置调试页面</h1>
+
+        <div id="debug-info"></div>
+
+        <h2>当前系统名称状态</h2>
+        <p>页面标题: <span id="pageTitle"></span></p>
+        <p>导航栏标题: <span id="navTitle"></span></p>
+        <p>localStorage系统名称: <span id="localStorageName"></span></p>
+
+        <h2>手动测试功能</h2>
+        <button onclick="testSettingsAPI()">测试获取系统设置</button>
+        <button onclick="testUpdateSettings()">测试更新系统设置</button>
+        <button onclick="testTitleUpdate()">测试直接更新标题</button>
+        <button onclick="testNavigationUpdate()">测试直接更新导航栏</button>
+        <button onclick="clearLocalStorage()">清除localStorage</button>
+
+        <h3>API响应结果</h3>
+        <pre id="api-result">等待API调用...</pre>
+
+        <h3>实时状态监控</h3>
+        <div id="real-time-status">
+            <p>最后更新时间: <span id="lastUpdate">-</span></p>
+            <p>更新计数: <span id="updateCount">0</span></p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+
+    <script>
+        let updateCounter = 0;
+
+        // 调试信息
+        function addDebugInfo(message, type = 'info') {
+            const debugDiv = document.getElementById('debug-info');
+            const p = document.createElement('p');
+            p.className = `debug ${type}`;
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugDiv.appendChild(p);
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        // 更新显示信息
+        function updateDisplayInfo() {
+            document.getElementById('pageTitle').textContent = document.title;
+
+            // 使用多种方法查找导航栏标题
+            let navTitle = document.querySelector('nav h1');
+            if (!navTitle) {
+                navTitle = document.querySelector('h1');
+            }
+            if (!navTitle) {
+                navTitle = document.querySelector('.nav h1');
+            }
+
+            console.log('查找导航栏标题结果:', navTitle);
+            document.getElementById('navTitle').textContent = navTitle ? navTitle.textContent : '未找到';
+
+            document.getElementById('localStorageName').textContent = localStorage.getItem('systemName') || '未设置';
+
+            // 更新最后更新时间
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // 测试直接更新标题
+        function testTitleUpdate() {
+            const testTitle = '测试页面标题 - ' + new Date().getSeconds();
+            document.title = testTitle;
+            addDebugInfo(`直接更新页面标题为: ${testTitle}`, 'success');
+            updateDisplayInfo();
+            updateCounter++;
+            document.getElementById('updateCount').textContent = updateCounter;
+        }
+
+        // 测试直接更新导航栏
+        function testNavigationUpdate() {
+            const testNavTitle = '测试导航栏 ' + new Date().getSeconds();
+
+            // 使用多种方法查找导航栏标题
+            let navTitle = document.querySelector('nav h1');
+            if (!navTitle) {
+                navTitle = document.querySelector('h1');
+            }
+            if (!navTitle) {
+                navTitle = document.querySelector('.nav h1');
+            }
+
+            if (navTitle) {
+                navTitle.textContent = testNavTitle;
+                addDebugInfo(`直接更新导航栏标题为: ${testNavTitle}`, 'success');
+            } else {
+                addDebugInfo('导航栏元素未找到', 'error');
+            }
+            updateDisplayInfo();
+            updateCounter++;
+            document.getElementById('updateCount').textContent = updateCounter;
+        }
+
+        // 测试API调用
+        async function testSettingsAPI() {
+            addDebugInfo('开始测试获取系统设置API...');
+            document.getElementById('api-result').textContent = '加载中...';
+            try {
+                const response = await window.API.service.get('/settings/general');
+                addDebugInfo(`API响应成功`, 'success');
+                document.getElementById('api-result').textContent = JSON.stringify(response, null, 2);
+                updateDisplayInfo();
+            } catch (error) {
+                addDebugInfo(`API调用失败: ${error.message}`, 'error');
+                document.getElementById('api-result').textContent = `错误: ${error.message}`;
+            }
+        }
+
+        // 测试更新设置
+        async function testUpdateSettings() {
+            const newName = 'Test System ' + new Date().getSeconds();
+            addDebugInfo(`开始测试更新系统名称为: ${newName}`);
+            try {
+                const response = await window.API.service.put('/settings/general', {
+                    systemName: newName
+                });
+                addDebugInfo(`API更新成功`, 'success');
+                document.getElementById('api-result').textContent = JSON.stringify(response, null, 2);
+
+                // 立即应用更改到前端显示
+                applyNewSystemName(newName);
+                updateCounter++;
+                document.getElementById('updateCount').textContent = updateCounter;
+
+            } catch (error) {
+                addDebugInfo(`更新失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 应用新的系统名称到前端显示
+        function applyNewSystemName(systemName) {
+            // 更新页面标题
+            const newTitle = `调试系统设置 - ${systemName}`;
+            document.title = newTitle;
+            console.log(`页面标题更新为: ${newTitle}`);
+
+            // 更新导航栏标题
+            let navTitle = document.querySelector('nav h1');
+            if (!navTitle) {
+                navTitle = document.querySelector('h1');
+            }
+            if (!navTitle) {
+                navTitle = document.querySelector('.nav h1');
+            }
+
+            if (navTitle) {
+                navTitle.textContent = systemName;
+                console.log(`导航栏标题更新为: ${systemName}`);
+            } else {
+                console.log('导航栏元素未找到');
+            }
+
+            // 更新localStorage
+            localStorage.setItem('systemName', systemName);
+            console.log(`localStorage更新为: ${systemName}`);
+
+            addDebugInfo(`新系统名称已应用: ${systemName}`, 'success');
+            updateDisplayInfo();
+        }
+
+        // 清除localStorage
+        function clearLocalStorage() {
+            localStorage.removeItem('systemName');
+            addDebugInfo('localStorage已清除', 'success');
+            updateDisplayInfo();
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            addDebugInfo('页面加载完成');
+            updateDisplayInfo();
+
+            // 检查API配置
+            if (window.API_CONFIG) {
+                addDebugInfo(`API配置: ${window.API_CONFIG.baseURL}`);
+            } else {
+                addDebugInfo('API配置未找到', 'error');
+            }
+
+            // 检查SystemNameManager
+            if (window.SystemNameManager) {
+                addDebugInfo('SystemNameManager已加载');
+            } else {
+                addDebugInfo('SystemNameManager未找到', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

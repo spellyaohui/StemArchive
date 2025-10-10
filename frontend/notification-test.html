@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提示系统兼容性测试</title>
+    <script src="css/fontawesome/fontawesome-free-6.4.0-web/js/all.js"></script>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">提示系统兼容性测试</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 旧版本调用方式 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">旧版本调用方式</h2>
+                <p class="text-gray-600 mb-4">showNotification(type, message)</p>
+
+                <div class="space-y-3">
+                    <button onclick="testOldWay('success', '操作成功完成，数据已保存到系统')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 block w-full">
+                        showNotification('success', '操作成功完成，数据已保存到系统')
+                    </button>
+
+                    <button onclick="testOldWay('error', '操作失败：网络连接超时，请检查网络设置后重试')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 block w-full">
+                        showNotification('error', '操作失败：网络连接超时，请检查网络设置后重试')
+                    </button>
+
+                    <button onclick="testOldWay('warning', '注意：输入的数据格式不正确，请按照要求填写')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 block w-full">
+                        showNotification('warning', '注意：输入的数据格式不正确，请按照要求填写')
+                    </button>
+
+                    <button onclick="testOldWay('info', '提示：系统将在5分钟后进行维护，请及时保存数据')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 block w-full">
+                        showNotification('info', '提示：系统将在5分钟后进行维护，请及时保存数据')
+                    </button>
+                </div>
+            </div>
+
+            <!-- 新版本调用方式 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">新版本调用方式</h2>
+                <p class="text-gray-600 mb-4">NotificationHelper.success(message, title)</p>
+
+                <div class="space-y-3">
+                    <button onclick="NotificationHelper.success('操作成功完成，数据已保存到系统', '保存成功')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 block w-full">
+                        NotificationHelper.success('操作成功完成...', '保存成功')
+                    </button>
+
+                    <button onclick="NotificationHelper.error('操作失败：网络连接超时，请检查网络设置后重试', '网络错误')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 block w-full">
+                        NotificationHelper.error('操作失败：网络连接超时...', '网络错误')
+                    </button>
+
+                    <button onclick="NotificationHelper.validationError('输入的数据格式不正确，请按照要求填写', '数据验证失败')" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 block w-full">
+                        NotificationHelper.validationError('输入的数据格式不正确...', '数据验证失败')
+                    </button>
+
+                    <button onclick="NotificationHelper.networkError('网络连接超时，请检查网络设置后重试', () => alert('重试功能执行'))" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 block w-full">
+                        NotificationHelper.networkError('网络连接超时...', 重试回调)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 自定义通知 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">自定义通知</h2>
+                <p class="text-gray-600 mb-4">showNotification(message, type, duration, options)</p>
+
+                <div class="space-y-3">
+                    <button onclick="testCustom()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded hover:from-purple-600 hover:to-pink-600 block w-full">
+                        带标题和操作按钮的自定义通知
+                    </button>
+
+                    <button onclick="testPersistent()" class="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded hover:from-red-600 hover:to-orange-600 block w-full">
+                        持久化通知（不自动关闭）
+                    </button>
+                </div>
+            </div>
+
+            <!-- 清除按钮 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">控制</h2>
+
+                <div class="space-y-3">
+                    <button onclick="clearAllNotifications()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 block w-full">
+                        清除所有通知
+                    </button>
+
+                    <button onclick="showNotificationCount()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 block w-full">
+                        显示当前通知数量
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white p-6 rounded-lg shadow">
+            <h3 class="font-semibold mb-3">测试说明</h3>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                <li><strong>旧版本方式</strong>：showNotification(type, message) - 兼容现有代码</li>
+                <li><strong>新版本方式</strong>：NotificationHelper.success(message, title) - 推荐使用</li>
+                <li><strong>自定义方式</strong>：支持标题、操作按钮、持久化等高级功能</li>
+                <li>所有通知都支持手动关闭（右上角X按钮）</li>
+                <li>成功/信息提示3秒自动关闭，错误/警告提示5秒自动关闭</li>
+                <li>网络错误提示包含重试按钮，持久化通知不会自动关闭</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testOldWay(type, message) {
+            console.log(`旧版本调用: showNotification('${type}', '${message}')`);
+            showNotification(type, message);
+        }
+
+        function testCustom() {
+            showNotification('这是一个自定义通知，包含详细的操作说明和可执行的操作按钮', 'info', 8000, {
+                title: '自定义通知标题',
+                actionText: '执行操作',
+                actionCallback: () => {
+                    alert('自定义操作被执行了！');
+                },
+                persistent: false
+            });
+        }
+
+        function testPersistent() {
+            showNotification('这是一个重要的持久化通知，不会自动关闭，需要用户手动确认', 'warning', 0, {
+                title: '重要提醒',
+                actionText: '我知道了',
+                actionCallback: () => {
+                    alert('用户已确认收到提醒');
+                },
+                persistent: true
+            });
+        }
+
+        function clearAllNotifications() {
+            const notifications = document.querySelectorAll('.notification');
+            notifications.forEach(notification => {
+                notification.remove();
+            });
+        }
+
+        function showNotificationCount() {
+            const count = document.querySelectorAll('.notification').length;
+            alert(`当前显示的通知数量: ${count}`);
+        }
+
+        // 页面加载时自动测试几个通知
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('自动测试旧版本调用方式...');
+                showNotification('success', '页面加载完成，欢迎使用提示系统测试页面');
+
+                setTimeout(() => {
+                    showNotification('info', '点击上方按钮测试不同类型的通知功能');
+                }, 1000);
+
+                setTimeout(() => {
+                    NotificationHelper.tip('提示：所有通知都支持手动关闭', '使用提示');
+                }, 2000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .login-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group input {
+            padding-left: 3rem;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-10px); }
+            20% { transform: translateX(10px); }
+            30% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            50% { transform: translateX(-5px); }
+            60% { transform: translateX(5px); }
+            70% { transform: translateX(-2px); }
+            80% { transform: translateX(2px); }
+            90% { transform: translateX(-1px); }
+        }
+
+        .shake {
+            animation: shake 0.6s ease-in-out;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        }
+
+        .input-error:focus {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="login-container max-w-md w-full rounded-2xl shadow-2xl p-8">
+            <!-- Logo和标题 -->
+            <div class="text-center mb-8">
+                <div class="floating inline-block mb-4">
+                    <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas fa-dna text-white text-3xl"></i>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">干细胞治疗档案管理系统</h1>
+                <p class="text-gray-600">请登录您的账户</p>
+            </div>
+
+            <!-- 内联错误提示容器 -->
+            <div id="inlineErrorContainer" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                    <span id="inlineErrorMessage" class="text-red-700 text-sm"></span>
+                </div>
+            </div>
+
+            <!-- 登录表单 -->
+            <form id="loginForm" class="space-y-6">
+                <!-- 用户名 -->
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="请输入用户名"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        required
+                    >
+                </div>
+
+                <!-- 密码 -->
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="请输入密码"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        required
+                    >
+                </div>
+
+                <!-- 记住我 -->
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2 text-sm text-gray-600">记住我</span>
+                    </label>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-500">忘记密码？</a>
+                </div>
+
+                <!-- 登录按钮 -->
+                <button
+                    type="submit"
+                    class="btn-login w-full text-white font-semibold py-3 px-4 rounded-lg shadow-md flex items-center justify-center"
+                >
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    登录
+                </button>
+            </form>
+
+            <!-- 底部信息 -->
+            <div class="mt-8 text-center">
+                <p class="text-sm text-gray-600">
+                    默认账号: <span class="font-mono bg-gray-100 px-2 py-1 rounded">admin</span> /
+                    密码: <span class="font-mono bg-gray-100 px-2 py-1 rounded">admin123</span>
+                </p>
+                <p class="text-xs text-gray-500 mt-4">
+                    © 2025 干细胞治疗档案管理系统. 保留所有权利.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // 登录功能
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 清除之前的错误状态
+            document.getElementById('inlineErrorContainer').classList.add('hidden');
+            document.querySelectorAll('.input-error').forEach(input => {
+                input.classList.remove('input-error');
+            });
+
+            const formData = new FormData(e.target);
+            const loginData = Object.fromEntries(formData.entries());
+            const rememberMe = e.target.querySelector('input[type="checkbox"]').checked;
+
+            // 检查表单字段是否为空
+            if (!loginData.username.trim() || !loginData.password.trim()) {
+                highlightErrorFields();
+                if (!loginData.username.trim() && !loginData.password.trim()) {
+                    showInlineError('请输入用户名和密码');
+                } else if (!loginData.username.trim()) {
+                    showInlineError('请输入用户名');
+                } else {
+                    showInlineError('请输入密码');
+                }
+                shakeLoginForm();
+                return;
+            }
+
+            try {
+                const hideLoadingFn = showLoading(e.target);
+
+                // 确保Auth实例存在
+                if (!window.auth) {
+                    window.auth = new Auth();
+                }
+
+                const result = await window.auth.login(loginData.username, loginData.password, rememberMe);
+
+                hideLoadingFn();
+
+                if (result.success) {
+                    // 立即隐藏登录表单，显示加载状态
+                    const loginContainer = document.querySelector('.login-container');
+                    const loadingHTML = `
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                            <p class="mt-4 text-gray-600">正在进入系统...</p>
+                        </div>
+                    `;
+                    loginContainer.innerHTML = loadingHTML;
+
+                    // 立即跳转到仪表板页面，使用replace避免历史记录
+                    window.location.replace('dashboard.html');
+                } else {
+                    // 增强错误提示 - 添加表单字段高亮和更明显的提示
+                    highlightErrorFields();
+
+                    if (result.message && result.message.includes('密码')) {
+                        showInlineError('用户名或密码错误，请重新输入');
+                    } else if (result.message && result.message.includes('用户')) {
+                        showInlineError('用户名不存在，请检查输入');
+                    } else {
+                        showInlineError('登录失败，请检查用户名和密码');
+                    }
+
+                    // 震动效果提示错误
+                    shakeLoginForm();
+                }
+            } catch (error) {
+                console.error('登录失败:', error);
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    showInlineError('无法连接到服务器，请检查网络连接后重试', true);
+                } else {
+                    showInlineError('登录过程中发生错误，请稍后重试');
+                }
+                highlightErrorFields();
+                shakeLoginForm();
+            }
+        });
+
+        // 页面加载前立即检查登录状态（避免闪烁）
+        (function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // 显示加载状态而不是直接跳转，提供更好的用户体验
+                document.body.innerHTML = `
+                    <div class="flex items-center justify-center min-h-screen" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-white mb-4"></div>
+                            <p class="text-white text-lg">正在验证身份，请稍候...</p>
+                        </div>
+                    </div>
+                `;
+
+                // 延迟跳转，让用户看到加载状态
+                setTimeout(() => {
+                    window.location.replace('dashboard.html');
+                }, 800);
+                return;
+            }
+        })();
+
+        // 页面加载时检查是否已登录（备用逻辑）
+        document.addEventListener('DOMContentLoaded', () => {
+            // 如果页面还在显示（即上面的跳转没有执行），再次检查
+            const token = localStorage.getItem('token');
+            if (token) {
+                window.location.replace('dashboard.html');
+                return;
+            }
+        });
+
+        // 忘记密码功能
+        document.querySelector('a[href="#"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            NotificationHelper.help('请联系系统管理员重置密码，提供您的用户名和工号信息', '密码重置');
+        });
+
+        // 回车键登录
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // 显示内联错误提示
+        function showInlineError(message, showRetryButton = false) {
+            const errorContainer = document.getElementById('inlineErrorContainer');
+            const errorMessage = document.getElementById('inlineErrorMessage');
+
+            errorContainer.classList.remove('hidden');
+
+            // 如果是网络错误，添加重试按钮
+            if (showRetryButton && message.includes('网络')) {
+                errorContainer.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                            <span class="text-red-700 text-sm">${message}</span>
+                        </div>
+                        <button onclick="document.getElementById('loginForm').dispatchEvent(new Event('submit'))"
+                                class="ml-4 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors">
+                            重试
+                        </button>
+                    </div>
+                `;
+            } else {
+                errorMessage.textContent = message;
+            }
+
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        }
+
+        // 高亮错误字段
+        function highlightErrorFields() {
+            const inputs = document.querySelectorAll('#loginForm input[type="text"], #loginForm input[type="password"]');
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('input-error');
+                } else {
+                    input.classList.remove('input-error');
+                }
+            });
+
+            // 输入时移除错误样式
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    input.classList.remove('input-error');
+                    document.getElementById('inlineErrorContainer').classList.add('hidden');
+                }, { once: true });
+            });
+        }
+
+        // 震动登录表单
+        function shakeLoginForm() {
+            const loginContainer = document.querySelector('.login-container');
+            loginContainer.classList.add('shake');
+
+            // 震动结束后移除类
+            setTimeout(() => {
+                loginContainer.classList.remove('shake');
+            }, 600);
+        }
+
+        // 不需要这个事件监听器了，因为我们在主提交函数中处理错误状态清理
+    </script>
+</body>
+</html>

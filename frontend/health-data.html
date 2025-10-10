@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康数据管理 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-dna text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">干细胞治疗档案管理系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="dashboard.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>仪表板
+                    </a>
+                    <a href="customers.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-users mr-2"></i>检客管理
+                    </a>
+                    <a href="health-data.html" class="nav-link hover:text-blue-200 transition-colors text-blue-200">
+                        <i class="fas fa-heartbeat mr-2"></i>健康数据
+                    </a>
+                    <a href="stem-cell.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-microscope mr-2"></i>干细胞管理
+                    </a>
+                    <a href="reports.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-file-medical mr-2"></i>报告查看
+                    </a>
+                    <a href="statistics.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>统计分析
+                    </a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:text-blue-200 transition-colors">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="username">用户</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>个人资料
+                            </a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>系统设置
+                            </a>
+                            <div id="adminMenuItems" class="hidden border-t border-gray-200">
+                                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    管理员工具
+                                </div>
+                                <button onclick="showDepartmentManagementModal()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-hospital mr-2"></i>科室管理
+                                </button>
+                                <button onclick="showTreatmentTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-chart-pie mr-2"></i>治疗类型维护
+                                </button>
+                                <button onclick="showDiseaseTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-notes-medical mr-2"></i>病种分布维护
+                                </button>
+                            </div>
+                            <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">健康数据管理</h2>
+            <p class="text-gray-600">录入和管理检客的体检评估数据和医学影像</p>
+        </div>
+
+        <!-- 操作流程提示 -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-600 mr-3 text-xl"></i>
+                <div>
+                    <h4 class="text-blue-900 font-semibold mb-1">操作流程说明</h4>
+                    <p class="text-blue-800 text-sm">请按照以下步骤操作：<strong>1️⃣ 选择科室类型</strong> → <strong>2️⃣ 选择检客和科室</strong> → <strong>3️⃣ 调阅体检信息</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 今日新增体检检客 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">今日新增体检检客</h3>
+                <button onclick="refreshTodayCustomers()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>刷新
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">身份证号</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">性别</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">年龄</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayCustomersTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- 今日检客数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+                <div id="noTodayCustomersMessage" class="hidden p-8 text-center text-gray-500">
+                    <i class="fas fa-user-clock text-4xl mb-4"></i>
+                    <p>今日暂无新增体检检客</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 健康数据录入区域 -->
+        <div id="healthDataEntryArea">
+            <!-- 第一步：选择科室类型 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <span class="text-blue-600 mr-2">1️⃣</span>选择科室类型
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <button onclick="selectDepartmentType('laboratory')" class="department-type-btn bg-yellow-100 text-yellow-700 p-4 rounded-lg hover:bg-yellow-200 transition-colors text-center">
+                        <i class="fas fa-vial text-2xl mb-2"></i>
+                        <p class="font-medium">检验科</p>
+                        <p class="text-xs text-yellow-600 mt-1">检验结果、参考值、异常状态</p>
+                    </button>
+                    <button onclick="selectDepartmentType('general')" class="department-type-btn bg-green-100 text-green-700 p-4 rounded-lg hover:bg-green-200 transition-colors text-center">
+                        <i class="fas fa-stethoscope text-2xl mb-2"></i>
+                        <p class="font-medium">常规科室</p>
+                        <p class="text-xs text-green-600 mt-1">项目名称、项目结果</p>
+                    </button>
+                    <button onclick="selectDepartmentType('imaging')" class="department-type-btn bg-purple-100 text-purple-700 p-4 rounded-lg hover:bg-purple-200 transition-colors text-center">
+                        <i class="fas fa-x-ray text-2xl mb-2"></i>
+                        <p class="font-medium">影像科室</p>
+                        <p class="text-xs text-purple-600 mt-1">检查描述、检查结论</p>
+                    </button>
+                    <button onclick="selectDepartmentType('instrument')" class="department-type-btn bg-blue-100 text-blue-700 p-4 rounded-lg hover:bg-blue-200 transition-colors text-center">
+                        <i class="fas fa-microscope text-2xl mb-2"></i>
+                        <p class="font-medium">仪器室</p>
+                        <p class="text-xs text-blue-600 mt-1">检查结果、医生</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 第二步：选择检客和科室 -->
+            <div id="customerAndDepartmentSection" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <span class="text-blue-600 mr-2">2️⃣</span>选择检客信息
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 检客选择 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择检客 <span class="text-red-500">*</span></label>
+                        <div class="flex space-x-2">
+                            <input
+                                type="text"
+                                id="customerIdentityCard"
+                                placeholder="请输入身份证号查找检客"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                readonly
+                            >
+                            <button
+                                type="button"
+                                onclick="customerLookup.showLookupModal({
+                                    title: '查找检客档案',
+                                    operationType: 'HealthAssessment',
+                                    onSuccess: handleCustomerSelect
+                                })"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <i class="fas fa-search mr-2"></i>查找
+                            </button>
+                        </div>
+                        <div id="selectedCustomerInfo" class="mt-2 hidden">
+                            <!-- 选中的检客信息将在这里显示 -->
+                        </div>
+                    </div>
+
+                    <!-- 科室选择 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择科室 <span class="text-red-500">*</span></label>
+                        <select id="departmentSelect" onchange="onDepartmentChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">请选择科室</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第三步：体检ID调阅 -->
+            <div id="examIdSection" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <span class="text-blue-600 mr-2">3️⃣</span>体检信息调阅
+                </h3>
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">体检ID <span class="text-red-500">*</span></label>
+                        <div class="flex space-x-2">
+                            <input
+                                type="text"
+                                id="medicalExamId"
+                                placeholder="请输入体检ID（唯一）"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                oninput="updateLookupExamButton()"
+                                required
+                            >
+                            <button
+                                type="button"
+                                onclick="lookupExaminationData()"
+                                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                title="调阅体检信息"
+                                id="lookupExamBtn"
+                                disabled
+                            >
+                                <i class="fas fa-search mr-2"></i>调阅体检信息
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 检验科数据录入表单 -->
+            <div id="labDataForm" class="health-data-form hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">检验数据录入</h3>
+                <form id="labHealthForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">检验日期 <span class="text-red-500">*</span></label>
+                            <input type="date" id="examDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">检验项目列表</label>
+                        <div id="labTestItems" class="space-y-3">
+                            <!-- 检验项目将动态添加到这里 -->
+                        </div>
+                        <button type="button" onclick="addLabTestItem()" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>添加检验项目
+                        </button>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="getHealthResults()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>获取体检结果
+                        </button>
+                        <button type="button" onclick="clearLabForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>清空
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 常规科室数据录入表单 -->
+            <div id="generalDataForm" class="health-data-form hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">常规科室数据录入</h3>
+                <form id="generalHealthForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">评估日期 <span class="text-red-500">*</span></label>
+                            <input type="date" id="assessmentDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">医生</label>
+                            <input type="text" id="generalDoctorName" placeholder="请输入医生姓名" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">评估项目列表</label>
+                        <div id="generalAssessmentItems" class="space-y-3">
+                            <!-- 评估项目将动态添加到这里 -->
+                        </div>
+                        <button type="button" onclick="addGeneralAssessmentItem()" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>添加评估项目
+                        </button>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="getHealthResults()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>获取体检结果
+                        </button>
+                        <button type="button" onclick="clearGeneralForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>清空
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 影像科室数据录入表单 -->
+            <div id="imagingDataForm" class="health-data-form hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">影像科室数据录入</h3>
+                <form id="imagingHealthForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">检查日期 <span class="text-red-500">*</span></label>
+                            <input type="date" id="examDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">医生 <span class="text-red-500">*</span></label>
+                            <input type="text" id="imagingDoctorName" required placeholder="请输入医生姓名" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">检查描述 <span class="text-red-500">*</span></label>
+                        <textarea id="examDescription" rows="6" required placeholder="请输入详细的检查描述..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">检查结论 <span class="text-red-500">*</span></label>
+                        <textarea id="examConclusion" rows="4" required placeholder="请输入检查结论..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="getHealthResults()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>获取体检结果
+                        </button>
+                        <button type="button" onclick="clearImagingForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>清空
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 仪器室数据录入表单 -->
+            <div id="instrumentDataForm" class="health-data-form hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">仪器室数据录入</h3>
+                <form id="instrumentHealthForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">检查日期 <span class="text-red-500">*</span></label>
+                            <input type="date" id="instrumentDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">医生 <span class="text-red-500">*</span></label>
+                            <input type="text" id="instrumentDoctor" required placeholder="请输入医生姓名" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">检查结果 <span class="text-red-500">*</span></label>
+                        <textarea id="instrumentResult" rows="8" required placeholder="请输入检查结果..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="getHealthResults()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>获取体检结果
+                        </button>
+                        <button type="button" onclick="clearInstrumentForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>清空
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 干细胞治疗档案管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- 科室管理弹出层 -->
+    <div id="departmentManagementModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-7xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">科室管理</h3>
+                <button type="button" onclick="closeDepartmentManagementModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="max-h-screen overflow-y-auto">
+                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/customerLookup.js"></script>
+
+    <script>
+        // 显示科室管理弹出层
+        function showDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+        }
+
+        // 关闭科室管理弹出层
+        function closeDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.add('hidden');
+        }
+
+        // 点击弹出层外部关闭
+        document.getElementById('departmentManagementModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // ESC键关闭弹出层
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // 显示治疗类型维护弹出层
+        function showTreatmentTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=treatment-maintenance';
+        }
+
+        // 显示病种分布维护弹出层
+        function showDiseaseTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=disease-maintenance';
+        }
+
+        // 处理检客选择
+        function handleCustomerSelect(customerData) {
+            const { customerInfo } = customerData;
+
+            // 安全地获取字段值，处理不同的字段名格式
+            const identityCard = customerInfo.identityCard || customerInfo.IdentityCard || '';
+            const name = customerInfo.name || customerInfo.Name || '未知';
+            const gender = customerInfo.gender || customerInfo.Gender || '';
+            const age = customerInfo.age || customerInfo.Age || '';
+            const customerId = customerInfo.id || customerInfo.ID;
+
+            // 填充身份证号
+            document.getElementById('customerIdentityCard').value = identityCard;
+
+            // 显示选中的检客信息
+            const infoDiv = document.getElementById('selectedCustomerInfo');
+            infoDiv.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        <div class="flex-1">
+                            <span class="font-medium text-green-800">${name}</span>
+                            <span class="text-gray-500 ml-2">${gender}</span>
+                            <span class="text-gray-500 ml-2">${age || ''}岁</span>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="clearCustomerSelection()"
+                            class="text-red-500 hover:text-red-700"
+                            title="清除选择"
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            infoDiv.classList.remove('hidden');
+
+            // 存储检客ID和身份证号用于表单提交
+            window.selectedCustomerId = customerId;
+            window.selectedCustomerIdentityCard = identityCard;
+
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+
+            showNotification('success', `已选择检客：${name}`);
+        }
+
+        // 清除检客选择
+        function clearCustomerSelection() {
+            document.getElementById('customerIdentityCard').value = '';
+            document.getElementById('selectedCustomerInfo').classList.add('hidden');
+            window.selectedCustomerId = null;
+        }
+
+        // 选择科室类型
+        function selectDepartmentType(type) {
+            window.selectedDepartmentType = type;
+
+            // 显示数据录入区域
+            document.getElementById('healthDataEntryArea').classList.remove('hidden');
+
+            // 隐藏所有表单
+            document.querySelectorAll('.health-data-form').forEach(form => {
+                form.classList.add('hidden');
+            });
+
+            // 重置所有按钮样式
+            document.querySelectorAll('.department-type-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-blue-500');
+            });
+
+            // 高亮选中的按钮
+            event.target.closest('.department-type-btn').classList.add('ring-2', 'ring-blue-500');
+
+            // 显示第二步区域（检客和科室选择）
+            document.getElementById('customerAndDepartmentSection').classList.remove('hidden');
+            document.getElementById('examIdSection').classList.remove('hidden');
+
+            // 加载对应类型的科室列表
+            loadDepartmentsByType(type);
+
+            // 显示对应的表单
+            switch(type) {
+                case 'laboratory':
+                    document.getElementById('labDataForm').classList.remove('hidden');
+                    break;
+                case 'general':
+                    document.getElementById('generalDataForm').classList.remove('hidden');
+                    break;
+                case 'imaging':
+                    document.getElementById('imagingDataForm').classList.remove('hidden');
+                    break;
+                case 'instrument':
+                    document.getElementById('instrumentDataForm').classList.remove('hidden');
+                    break;
+            }
+
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+        }
+
+        // 根据类型加载科室列表
+        async function loadDepartmentsByType(type) {
+            try {
+                const response = await api.get(`/departments?type=${type}`);
+                if (response.success) {
+                    const select = document.getElementById('departmentSelect');
+                    select.innerHTML = '<option value="">请选择科室</option>';
+
+                    response.data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.Name;
+                        // 添加科室编码作为data属性，常规科室、影像科室和仪器室需要使用
+                        if (dept.Code && (type === 'general' || type === 'imaging' || type === 'instrument')) {
+                            option.setAttribute('data-ksbm', dept.Code);
+                        }
+                        select.appendChild(option);
+                    });
+
+                    // 科室列表加载完成后，更新调阅按钮状态（如果用户已经选择了检客）
+                    updateLookupExamButton();
+                } else {
+                    console.error('加载科室列表失败:', response.message);
+                    NotificationHelper.error(response.message || '无法加载科室列表，请检查网络连接', '数据加载失败');
+                }
+            } catch (error) {
+                console.error('加载科室列表失败:', error);
+                NotificationHelper.networkError('网络连接失败，无法加载科室列表，请检查网络设置后重试', () => {
+                    loadDepartmentsByType(type); // 重试函数
+                });
+            }
+        }
+
+        // 科室变更事件
+        function onDepartmentChange() {
+            // 这里可以根据选择的科室加载相应的表单模板
+            console.log('科室已变更');
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+        }
+
+        // 添加检验项目
+        function addLabTestItem() {
+            const container = document.getElementById('labTestItems');
+            const itemId = 'lab_' + Date.now();
+
+            const itemHtml = `
+                <div id="${itemId}" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-medium text-gray-700">检验项目</h4>
+                        <button type="button" onclick="removeLabTestItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">检验名称 <span class="text-red-500">*</span></label>
+                            <input type="text" name="testName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 血常规">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">检验结果 <span class="text-red-500">*</span></label>
+                            <input type="text" name="testResult" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 4.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">参考值</label>
+                            <input type="text" name="referenceValue" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 3.5-9.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">异常状态</label>
+                            <select name="abnormalStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="0">正常</option>
+                                <option value="1">偏低</option>
+                                <option value="2">偏高</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">单位</label>
+                            <input type="text" name="unit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 10^9/L">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">检查医生</label>
+                            <input type="text" name="doctor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 张医生">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        // 移除检验项目
+        function removeLabTestItem(itemId) {
+            const item = document.getElementById(itemId);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        // 添加常规评估项目
+        function addGeneralAssessmentItem() {
+            const container = document.getElementById('generalAssessmentItems');
+            const itemId = 'general_' + Date.now();
+
+            const itemHtml = `
+                <div id="${itemId}" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-medium text-gray-700">评估项目</h4>
+                        <button type="button" onclick="removeGeneralAssessmentItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">项目名称 <span class="text-red-500">*</span></label>
+                            <input type="text" name="itemName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 血压">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">项目结果 <span class="text-red-500">*</span></label>
+                            <input type="text" name="itemResult" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 120/80 mmHg">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        // 移除常规评估项目
+        function removeGeneralAssessmentItem(itemId) {
+            const item = document.getElementById(itemId);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        // 获取体检结果
+        async function getHealthResults() {
+            // 验证检客是否已选择
+            if (!window.selectedCustomerId) {
+                NotificationHelper.validationError('请先在上方选择或查找检客信息，然后才能获取体检结果');
+                return;
+            }
+
+            const selectedDepartment = window.selectedDepartmentType;
+            if (selectedDepartment !== 'laboratory' && selectedDepartment !== 'general' && selectedDepartment !== 'imaging' && selectedDepartment !== 'instrument') {
+                showNotification('info', '目前仅支持检验科、常规科室、影像科室和仪器室数据获取');
+                return;
+            }
+
+            // 获取体检ID
+            const examId = document.getElementById('medicalExamId').value;
+            if (!examId) {
+                NotificationHelper.validationError('请先通过调阅按钮选择体检ID，或在输入框中手动输入体检ID');
+                return;
+            }
+
+            // 获取选中的科室
+            const departmentSelect = document.getElementById('departmentSelect');
+            const selectedDepartmentOption = departmentSelect.options[departmentSelect.selectedIndex];
+            const ksbm = selectedDepartmentOption ? selectedDepartmentOption.getAttribute('data-ksbm') : null;
+
+            if ((selectedDepartment === 'general' || selectedDepartment === 'imaging' || selectedDepartment === 'instrument') && !ksbm) {
+                NotificationHelper.validationError('请先选择具体的科室，以便获取对应的科室编码');
+                return;
+            }
+
+            const departmentName = selectedDepartment === 'laboratory' ? '检验科' :
+                              selectedDepartment === 'general' ? '常规科室' :
+                              selectedDepartment === 'imaging' ? '影像科室' : '仪器室';
+            const loadingNotification = NotificationHelper.loading(`正在从${departmentName}系统获取数据，请稍候...`);
+
+            try {
+                let result;
+
+                if (selectedDepartment === 'laboratory') {
+                    // 强制清空检验项目容器，确保没有残留数据
+                    const container = document.getElementById('labTestItems');
+                    if (container) {
+                        container.innerHTML = '';
+                        // 彻底移除所有子元素
+                        while (container.firstChild) {
+                            container.removeChild(container.firstChild);
+                        }
+                    }
+
+                    // 调用第三方API获取检验科数据
+                    const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_laboratory`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...window.EXAMINATION_API_CONFIG.headers
+                        },
+                        body: JSON.stringify({
+                            studyId: examId
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    result = await response.json();
+
+                    if (result.code === 200 && result.data) {
+                        NotificationHelper.success(`成功获取 ${result.data.length} 项检验数据，已自动填充到表单中`, '数据获取成功');
+                        console.log('📋 检验科数据:', result.data);
+                        console.log('📋 原始数据详细结构:');
+                        result.data.forEach((item, index) => {
+                            console.log(`  ${index + 1}. 组合项目: ${item.SFXMMC}, 子项目: ${item.XXMC}, 结果: ${item.ItemResult}, 单位: "${item.ItemUnit}"`,
+                                           `检查日期: ${item.CheckDate}, 医生: ${item.Doctor}, 状态标记: ${item.Flag}`);
+                        });
+                        console.log('📅 检验日期(tjrq):', result.tjrq);
+
+                        // 将数据和检验日期一起填充到表单中
+                        fillLaboratoryDataForm(result.data, result.tjrq);
+                    } else {
+                        NotificationHelper.warning(result.message || '该体检ID未找到对应的检验数据，请检查体检ID是否正确', '数据未找到');
+                    }
+                } else if (selectedDepartment === 'general') {
+                    // 强制清空常规科室项目容器，确保没有残留数据
+                    const container = document.getElementById('generalAssessmentItems');
+                    if (container) {
+                        container.innerHTML = '';
+                        // 彻底移除所有子元素
+                        while (container.firstChild) {
+                            container.removeChild(container.firstChild);
+                        }
+                    }
+
+                    // 调用常规科室API获取数据
+                    result = await window.API.generalDepartment.queryGeneralDepartment(examId, ksbm);
+
+                    if (result.code === 200 && result.data) {
+                        NotificationHelper.success(`成功获取常规科室数据，已自动填充到表单中`, '数据获取成功');
+                        console.log('📋 常规科室数据:', result.data);
+                        console.log('📋 原始数据详细结构:');
+                        result.data.forEach((item, index) => {
+                            console.log(`  ${index + 1}. StudyID: ${item.StudyID}, 包含字段数量: ${Object.keys(item).length}`);
+                            Object.keys(item).forEach(key => {
+                                if (key !== 'StudyID' && item[key] !== null && item[key] !== '') {
+                                    console.log(`    - ${key}: ${item[key]}`);
+                                }
+                            });
+                        });
+
+                        // 填充医生字段
+                        if (result.医生) {
+                            const doctorInput = document.getElementById('generalDoctorName');
+                            if (doctorInput) {
+                                doctorInput.value = result.医生;
+                                console.log('👨‍⚕️ 已填充常规科室医生姓名:', result.医生);
+                            }
+                        }
+
+                        // 将数据填充到常规科室表单中
+                        fillGeneralDepartmentForm(result.data);
+                    } else {
+                        NotificationHelper.warning(result.message || '该体检ID未找到对应的常规科室数据，请检查体检ID是否正确', '数据未找到');
+                    }
+                } else if (selectedDepartment === 'imaging') {
+                    // 调用影像科室API获取数据
+                    result = await window.API.imagingDepartment.queryImagingDepartment(examId, ksbm);
+
+                    if (result.code === 200 && result.data) {
+                        NotificationHelper.success(`成功获取影像科室数据，已自动填充到表单中`, '数据获取成功');
+                        console.log('📋 影像科室数据:', result.data);
+                        console.log('📋 原始数据详细结构:');
+                        result.data.forEach((item, index) => {
+                            console.log(`  ${index + 1}. StudyID: ${item.StudyID}, Doctor: ${item.Doctor}`);
+                            console.log(`    - 检查描述长度: ${item['检查描述'] ? item['检查描述'].length : 0} 字符`);
+                            console.log(`    - 检查结论长度: ${item['检查结论'] ? item['检查结论'].length : 0} 字符`);
+                        });
+                        console.log('📅 体检日期(tjrq):', result.tjrq);
+
+                        // 将数据填充到影像科室表单中
+                        fillImagingDepartmentForm(result.data, result.tjrq);
+                    } else {
+                        NotificationHelper.warning(result.message || '该体检ID未找到对应的影像科室数据，请检查体检ID是否正确', '数据未找到');
+                    }
+                } else if (selectedDepartment === 'instrument') {
+                    // 调用仪器室API获取数据
+                    result = await window.API.instrumentRoom.queryInstrumentRoom(examId, ksbm);
+
+                    if (result.code === 200 && result.data) {
+                        NotificationHelper.success(`成功获取仪器室数据，已自动填充到表单中`, '数据获取成功');
+                        console.log('📋 仪器室数据:', result.data);
+                        console.log('📋 原始数据详细结构:');
+                        result.data.forEach((item, index) => {
+                            console.log(`  ${index + 1}. StudyID: ${item.StudyID}, 检查结果: ${item['检查结果']}`);
+                        });
+                        console.log('📅 体检日期(tjrq):', result.tjrq);
+
+                        // 将数据填充到仪器室表单中
+                        fillInstrumentRoomForm(result.data, result.tjrq);
+                    } else {
+                        NotificationHelper.warning(result.message || '该体检ID未找到对应的仪器室数据，请检查体检ID是否正确', '数据未找到');
+                    }
+                }
+
+                // 关闭加载提示
+                if (loadingNotification) {
+                    loadingNotification.remove();
+                }
+
+            } catch (error) {
+                const departmentName = selectedDepartment === 'laboratory' ? '检验科' :
+                              selectedDepartment === 'general' ? '常规科室' :
+                              selectedDepartment === 'imaging' ? '影像科室' : '仪器室';
+                console.error(`获取${departmentName}数据失败:`, error);
+                // 关闭加载提示
+                if (loadingNotification) {
+                    loadingNotification.remove();
+                }
+
+                if (error.message.includes('fetch')) {
+                    NotificationHelper.networkError(`无法连接到${departmentName}数据服务器，请检查网络连接或联系技术人员`, () => {
+                        getHealthResults(); // 重试函数
+                    });
+                } else {
+                    NotificationHelper.error(`获取${departmentName}数据失败: ` + error.message, '数据获取错误');
+                }
+            }
+        }
+
+        // 调阅体检信息
+        async function lookupExaminationData() {
+            const identityCard = document.getElementById('customerIdentityCard').value;
+            const selectedDepartment = window.selectedDepartmentType;
+
+            if (!identityCard) {
+                showNotification('error', '请先选择检客');
+                return;
+            }
+
+            if (!selectedDepartment) {
+                showNotification('error', '请先选择科室类型');
+                return;
+            }
+
+            showNotification('info', '正在获取体检ID列表...');
+
+            try {
+                // 调用第三方API获取体检ID列表
+                const examIdsUrl = `${window.EXAMINATION_API_CONFIG.baseURL}/examination-ids/${identityCard}`;
+
+                const response = await fetch(examIdsUrl, {
+                    method: 'GET',
+                    headers: window.EXAMINATION_API_CONFIG.headers
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.code === 200 && result.data) {
+                    await showExaminationIdSelectionModal(result.data, identityCard, selectedDepartment);
+                } else {
+                    showNotification(result.message || '未查询到体检ID列表', 'warning');
+                }
+
+            } catch (error) {
+                console.error('获取体检ID列表失败:', error);
+                showNotification('获取体检ID列表失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示体检ID选择模态框
+        async function showExaminationIdSelectionModal(examinationIds, identityCard, departmentType) {
+            const modalContainer = document.getElementById('modalContainer');
+            if (!modalContainer) return;
+
+            const departmentNames = {
+                'laboratory': '检验科',
+                'general': '常规科室',
+                'imaging': '影像科室',
+                'instrument': '仪器室'
+            };
+
+            modalContainer.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xl font-semibold text-gray-900">
+                                    <i class="fas fa-list mr-2 text-blue-600"></i>
+                                    选择体检ID - ${departmentNames[departmentType]}
+                                </h3>
+                                <button onclick="closeExaminationIdSelectionModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">
+                                身份证号: ${identityCard} | 找到 ${examinationIds.length} 个体检ID
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div id="examinationIdsList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                                <!-- 体检ID列表将在这里渲染 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 渲染体检ID列表
+            renderExaminationIdsList(examinationIds, identityCard, departmentType);
+        }
+
+        // 渲染体检ID列表
+        function renderExaminationIdsList(examinationIds, identityCard, departmentType) {
+            const listContainer = document.getElementById('examinationIdsList');
+            if (!listContainer) return;
+
+            if (examinationIds.length === 0) {
+                listContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">未查询到体检ID</div>';
+                return;
+            }
+
+            listContainer.innerHTML = examinationIds.map(examId => {
+                const examIdElementId = `examId_${examId}`;
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
+                         onclick="selectExaminationId('${examId}', '${identityCard}', '${departmentType}')"
+                         title="点击选择此体检ID">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-file-medical text-2xl text-blue-500 mb-2"></i>
+                            <span class="font-mono text-sm font-medium text-gray-800">${examId}</span>
+                            <div id="${examIdElementId}" class="text-xs text-gray-500 mt-1">
+                                <i class="fas fa-spinner fa-spin mr-1"></i>验证中...
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 自动验证所有体检ID
+            examinationIds.forEach(examId => {
+                validateExaminationIdInModal(examId, departmentType);
+            });
+        }
+
+        // 验证模态框中的体检ID
+        async function validateExaminationIdInModal(examId, departmentType) {
+            const examIdElementId = `examId_${examId}`;
+            const validationElement = document.getElementById(examIdElementId);
+
+            if (!validationElement) return;
+
+            try {
+                // 根据科室类型选择正确的API端点
+                let checkUrl;
+                if (departmentType === 'laboratory') {
+                    checkUrl = `${CONFIG.api.baseURL}/laboratory-data/check-exam-id/${examId}`;
+                } else {
+                    // 获取当前选择的具体科室名称（现在所有调用都确保已选择科室）
+                    const actualDepartmentName = getActualDepartmentName(departmentType);
+                    checkUrl = `${CONFIG.api.baseURL}/health-assessments/check-exam-id/${examId}?departmentType=${encodeURIComponent(actualDepartmentName)}`;
+                }
+
+                const response = await fetch(checkUrl);
+
+                // 如果API不存在，使用模拟验证逻辑
+                if (!response.ok && response.status === 404) {
+                    await simulateValidationInModal(examId, departmentType, validationElement);
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.status === 'Success') {
+                    if (result.data.exists) {
+                        validationElement.innerHTML = `
+                            <span class="text-red-600 font-medium">
+                                <i class="fas fa-times-circle mr-1"></i>已有数据
+                            </span>
+                        `;
+                        validationElement.parentElement.parentElement.classList.add('bg-red-50', 'border-red-300');
+                        validationElement.parentElement.parentElement.classList.remove('hover:bg-blue-50', 'hover:border-blue-300');
+                    } else {
+                        validationElement.innerHTML = `
+                            <span class="text-green-600 font-medium">
+                                <i class="fas fa-check-circle mr-1"></i>无数据
+                            </span>
+                        `;
+                    }
+                } else {
+                    throw new Error(result.message || '验证失败');
+                }
+            } catch (error) {
+                console.error('验证体检ID失败:', error);
+                // 如果API不存在，使用模拟验证逻辑
+                if (error.message.includes('404') || error.message.includes('请求的资源不存在')) {
+                    await simulateValidationInModal(examId, departmentType, validationElement);
+                } else {
+                    validationElement.innerHTML = `
+                        <span class="text-yellow-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>验证失败
+                        </span>
+                    `;
+                }
+            }
+        }
+
+        // 模拟模态框中的验证逻辑（临时使用）
+        async function simulateValidationInModal(examId, selectedDepartment, validationElement) {
+            // 模拟验证延迟
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            let isExisting = false;
+
+            try {
+                // 根据科室类型选择正确的API端点
+                let checkUrl;
+                if (selectedDepartment === 'laboratory') {
+                    checkUrl = `${CONFIG.api.baseURL}/laboratory-data/check-exam-id/${examId}`;
+                } else {
+                    // 使用实际科室名称而不是科室类型
+                    const actualDepartmentName = getActualDepartmentName(selectedDepartment);
+                    checkUrl = `${CONFIG.api.baseURL}/health-assessments/check-exam-id/${examId}?departmentType=${encodeURIComponent(actualDepartmentName)}`;
+                }
+
+                const response = await fetch(checkUrl);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'Success' && result.data.exists) {
+                        isExisting = true;
+                    }
+                }
+            } catch (error) {
+                console.log('验证体检ID失败:', error.message);
+                // 如果API验证失败，假设无数据（允许选择）
+            }
+
+            if (isExisting) {
+                validationElement.innerHTML = `
+                    <span class="text-red-600 font-medium">
+                        <i class="fas fa-times-circle mr-1"></i>已有数据
+                    </span>
+                `;
+                validationElement.parentElement.parentElement.classList.add('bg-red-50', 'border-red-300');
+                validationElement.parentElement.parentElement.classList.remove('hover:bg-blue-50', 'hover:border-blue-300');
+            } else {
+                validationElement.innerHTML = `
+                    <span class="text-green-600 font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>无数据
+                    </span>
+                `;
+            }
+        }
+
+        // 选择体检ID
+        async function selectExaminationId(examId, identityCard, departmentType) {
+            try {
+                // 根据科室类型选择正确的API端点
+                let checkUrl;
+                if (departmentType === 'laboratory') {
+                    checkUrl = `${CONFIG.api.baseURL}/laboratory-data/check-exam-id/${examId}`;
+                } else {
+                    const actualDepartmentName = getActualDepartmentName(departmentType);
+                checkUrl = `${CONFIG.api.baseURL}/health-assessments/check-exam-id/${examId}?departmentType=${encodeURIComponent(actualDepartmentName)}`;
+                }
+
+                const response = await fetch(checkUrl);
+                let isExisting = false;
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'Success' && result.data.exists) {
+                        isExisting = true;
+                    }
+                }
+
+                if (isExisting) {
+                    // 体检ID已存在，不允许选择
+                    showNotification('error', `该体检ID在${getDepartmentDisplayName(departmentType)}中已存在，请选择其他体检ID`);
+                    return;
+                }
+            } catch (error) {
+                console.log('API验证失败，允许选择体检ID:', error.message);
+                // 如果API验证失败，允许选择（避免硬编码导致的无法选择问题）
+            }
+
+            // 填充体检ID到输入框
+            document.getElementById('medicalExamId').value = examId;
+
+            // 关闭模态框
+            closeExaminationIdSelectionModal();
+
+            // 显示成功提示
+            showNotification('success', `已选择体检ID: ${examId}`);
+
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+        }
+
+        // 关闭体检ID选择模态框
+        function closeExaminationIdSelectionModal() {
+            const modalContainer = document.getElementById('modalContainer');
+            if (modalContainer) {
+                modalContainer.innerHTML = '';
+            }
+        }
+
+        // 根据科室类型获取API URL
+        async function getExaminationApiUrl(departmentType, identityCard, examId) {
+            const baseUrl = window.EXAMINATION_API_CONFIG.baseURL;
+
+            switch (departmentType) {
+                case 'laboratory':
+                    // 检验科API
+                    return `${baseUrl}/laboratory/examination/${examId}?identityCard=${identityCard}`;
+                case 'general':
+                    // 常规科室API
+                    return `${baseUrl}/general/examination/${examId}?identityCard=${identityCard}`;
+                case 'imaging':
+                    // 影像科室API
+                    return `${baseUrl}/imaging/examination/${examId}?identityCard=${identityCard}`;
+                case 'instrument':
+                    // 仪器室API
+                    return `${baseUrl}/instrument/examination/${examId}?identityCard=${identityCard}`;
+                default:
+                    throw new Error('未知的科室类型');
+            }
+        }
+
+        // 显示体检数据模态框
+        async function showExaminationDataModal(data, departmentType, examId) {
+            const modalContainer = document.getElementById('modalContainer');
+            if (!modalContainer) return;
+
+            const departmentNames = {
+                'laboratory': '检验科',
+                'general': '常规科室',
+                'imaging': '影像科室',
+                'instrument': '仪器室'
+            };
+
+            modalContainer.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xl font-semibold text-gray-900">
+                                    <i class="fas fa-stethoscope mr-2 text-purple-600"></i>
+                                    体检信息调阅 - ${departmentNames[departmentType]}
+                                </h3>
+                                <button onclick="closeExaminationDataModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">
+                                体检ID: ${examId} | 科室: ${departmentNames[departmentType]}
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div id="examinationDataContent">
+                                <!-- 体检数据内容将在这里渲染 -->
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-gray-200">
+                                <div class="flex justify-end space-x-3">
+                                    ${departmentType === 'laboratory' ? `
+                                        <button onclick="importExaminationData('${examId}', '${departmentType}')"
+                                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                            <i class="fas fa-cloud-download-alt mr-2"></i>获取检验数据
+                                        </button>
+                                    ` : `
+                                        <button onclick="importExaminationData('${examId}', '${departmentType}')"
+                                                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                            <i class="fas fa-download mr-2"></i>导入数据
+                                        </button>
+                                    `}
+                                    <button onclick="closeExaminationDataModal()"
+                                            class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                                        关闭
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 渲染体检数据内容
+            await renderExaminationDataContent(data, departmentType);
+        }
+
+        // 渲染体检数据内容
+        async function renderExaminationDataContent(data, departmentType) {
+            const contentContainer = document.getElementById('examinationDataContent');
+            if (!contentContainer) return;
+
+            let content = '';
+
+            switch (departmentType) {
+                case 'laboratory':
+                    content = renderLaboratoryData(data);
+                    break;
+                case 'general':
+                    content = renderGeneralData(data);
+                    break;
+                case 'imaging':
+                    content = renderImagingData(data);
+                    break;
+                case 'instrument':
+                    content = renderInstrumentData(data);
+                    break;
+                default:
+                    content = '<div class="text-center text-gray-500 py-8">未知科室类型</div>';
+            }
+
+            contentContainer.innerHTML = content;
+        }
+
+        // 渲染检验科数据
+        function renderLaboratoryData(data) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">检验结果</h4>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <pre class="text-sm text-gray-700 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染常规科室数据
+        function renderGeneralData(data) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">检查项目结果</h4>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <pre class="text-sm text-gray-700 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染影像科室数据
+        function renderImagingData(data) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">影像检查结果</h4>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <pre class="text-sm text-gray-700 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染仪器室数据
+        function renderInstrumentData(data) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">仪器检查结果</h4>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <pre class="text-sm text-gray-700 whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 关闭体检数据模态框
+        function closeExaminationDataModal() {
+            const modalContainer = document.getElementById('modalContainer');
+            if (modalContainer) {
+                modalContainer.innerHTML = '';
+            }
+        }
+
+        // 导入体检数据
+        async function importExaminationData(examId, departmentType) {
+            if (departmentType === 'laboratory') {
+                await importLaboratoryData(examId);
+            } else {
+                showNotification('info', '该科室数据导入功能开发中...');
+            }
+        }
+
+        // 导入检验科数据
+        async function importLaboratoryData(examId) {
+            showNotification('info', '正在获取检验科数据...');
+
+            try {
+                // 调用检验科API获取数据
+                const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_laboratory`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...window.EXAMINATION_API_CONFIG.headers
+                    },
+                    body: JSON.stringify({
+                        studyId: examId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.code === 200 && result.data) {
+                    await fillLaboratoryDataForm(result.data);
+                    closeExaminationDataModal();
+                    showNotification('success', `已成功导入 ${result.data.length} 项检验数据`);
+                } else {
+                    showNotification(result.message || '未获取到检验数据', 'warning');
+                }
+
+            } catch (error) {
+                console.error('获取检验科数据失败:', error);
+                showNotification('获取检验科数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 填充检验科数据表单 - 重写版本
+        async function fillLaboratoryDataForm(laboratoryData, tjrq) {
+            console.log('🔄 开始新的fillLaboratoryDataForm调用');
+            console.log('📊 接收数据:', laboratoryData.length, '条记录');
+            console.log('📅 接收tjrq参数:', tjrq);
+
+            // 确保显示健康数据录入区域
+            const entryArea = document.getElementById('healthDataEntryArea');
+            if (entryArea) {
+                entryArea.classList.remove('hidden');
+                entryArea.style.display = 'block';
+            }
+
+            // 彻底清空并重新创建容器
+            const container = document.getElementById('labTestItems');
+            container.innerHTML = '';
+
+            // 确保容器完全清空
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            console.log('🧹 容器已清空');
+
+            // 为每条数据创建一个卡片，不进行分组
+            laboratoryData.forEach((item, index) => {
+                console.log(`📋 创建卡片 ${index + 1}/${laboratoryData.length}: ${item.XXMC}`);
+
+                // 确定异常状态
+                let abnormalStatus = '0'; // 正常
+                if (item.Flag === 2) {
+                    abnormalStatus = '2'; // 偏高
+                } else if (item.Flag === 1) {
+                    abnormalStatus = '1'; // 偏低
+                }
+
+                // 创建唯一的卡片ID
+                const itemId = 'lab_' + Date.now() + '_' + index;
+
+                // 直接创建HTML字符串
+                const itemHtml = `
+                    <div id="${itemId}" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-medium text-gray-700">${item.SFXMMC || '检验项目'}</h4>
+                            <button type="button" onclick="removeLabTestItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">检验名称</label>
+                                <input type="text" name="testName" value="${item.SFXMMC || ''} - ${item.XXMC || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">检验结果</label>
+                                <input type="text" name="testResult" value="${item.ItemResult || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">参考值</label>
+                                <input type="text" name="referenceValue" value="${item.DefValue || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">异常状态</label>
+                                <select name="abnormalStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="0" ${abnormalStatus === '0' ? 'selected' : ''}>正常</option>
+                                    <option value="1" ${abnormalStatus === '1' ? 'selected' : ''}>偏低</option>
+                                    <option value="2" ${abnormalStatus === '2' ? 'selected' : ''}>偏高</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">单位</label>
+                                <input type="text" name="unit" value="${item.ItemUnit || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">检查医生</label>
+                                <input type="text" name="doctor" value="${item.Doctor || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 添加到容器
+                container.insertAdjacentHTML('beforeend', itemHtml);
+                console.log(`✅ 卡片 ${index + 1} 已创建`);
+            });
+
+            // 填充检查日期（使用传入的tjrq参数）
+            if (tjrq) {
+                const checkDateInput = document.getElementById('examDate');
+                if (checkDateInput) {
+                    // 格式化tjrq日期为YYYY-MM-DD格式
+                    const tjrqDate = new Date(tjrq);
+                    // 使用本地时间格式化，避免时区问题
+                    const year = tjrqDate.getFullYear();
+                    const month = String(tjrqDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(tjrqDate.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
+                    checkDateInput.value = formattedDate;
+                    console.log('📅 使用tjrq参数填充体检日期:', formattedDate, '原始tjrq:', tjrq);
+                }
+            }
+
+            console.log(`🎉 完成！创建了 ${laboratoryData.length} 个检验项目卡片`);
+        }
+
+        // 填充常规科室数据表单
+        async function fillGeneralDepartmentForm(generalData) {
+            console.log('🔄 开始fillGeneralDepartmentForm调用');
+            console.log('📊 接收常规科室数据:', generalData.length, '条记录');
+
+            // 确保显示健康数据录入区域
+            const entryArea = document.getElementById('healthDataEntryArea');
+            if (entryArea) {
+                entryArea.classList.remove('hidden');
+                entryArea.style.display = 'block';
+            }
+
+            // 彻底清空并重新创建容器
+            const container = document.getElementById('generalAssessmentItems');
+            container.innerHTML = '';
+
+            // 确保容器完全清空
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            console.log('🧹 常规科室容器已清空');
+
+            // 处理实际API返回的数据结构
+            // 实际数据格式：{StudyID: "...", 胸廓: "未见异常", 肺: "双肺呼吸音清晰", ...}
+            let assessmentItems = [];
+
+            if (generalData.length > 0) {
+                const dataItem = generalData[0]; // 取第一条记录
+
+                // 遍历对象的所有属性，排除空值和系统字段
+                Object.keys(dataItem).forEach(key => {
+                    const value = dataItem[key];
+
+                    // 跳过StudyID、小结、其他等系统字段和空值
+                    if (key !== 'StudyID' && key !== '小结' && key !== '其他' &&
+                        value !== null && value !== undefined && value !== '') {
+                        assessmentItems.push({
+                            itemName: key,
+                            itemResult: value
+                        });
+                    }
+                });
+            }
+
+            console.log('📋 解析后的评估项目:', assessmentItems);
+
+            // 为每个评估项目创建一个卡片
+            assessmentItems.forEach((item, index) => {
+                console.log(`📋 创建常规科室卡片 ${index + 1}/${assessmentItems.length}: ${item.itemName}`);
+
+                // 创建唯一的卡片ID
+                const itemId = 'general_' + Date.now() + '_' + index;
+
+                // 直接创建HTML字符串
+                const itemHtml = `
+                    <div id="${itemId}" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-medium text-gray-700">${item.itemName || '评估项目'}</h4>
+                            <button type="button" onclick="removeGeneralAssessmentItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">项目名称</label>
+                                <input type="text" name="itemName" value="${item.itemName}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">项目结果</label>
+                                <input type="text" name="itemResult" value="${item.itemResult}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 添加到容器
+                container.insertAdjacentHTML('beforeend', itemHtml);
+                console.log(`✅ 常规科室卡片 ${index + 1} 已创建`);
+            });
+
+            console.log(`🎉 常规科室完成！创建了 ${assessmentItems.length} 个评估项目卡片`);
+        }
+
+        // 填充影像科室表单数据
+        async function fillImagingDepartmentForm(imagingData, examDate) {
+            console.log('🔄 开始fillImagingDepartmentForm调用');
+            console.log('📊 接收影像科室数据:', imagingData.length, '条记录');
+            console.log('📅 体检日期:', examDate);
+
+            // 确保显示健康数据录入区域
+            const entryArea = document.getElementById('healthDataEntryArea');
+            if (entryArea) {
+                entryArea.classList.remove('hidden');
+            }
+
+            // 填充体检日期（如果提供了日期）
+            if (examDate) {
+                const examDateInput = document.getElementById('examDate');
+                if (examDateInput) {
+                    // 将ISO日期格式转换为YYYY-MM-DD格式
+                    const date = new Date(examDate);
+                    const formattedDate = date.toISOString().split('T')[0];
+                    examDateInput.value = formattedDate;
+                    console.log('📅 已填充体检日期:', formattedDate);
+                }
+            }
+
+            // 影像科室API返回的数据结构：
+            // [
+            //   {
+            //     "StudyID": "2401110282",
+            //     "Doctor": "郝艳香",
+            //     "检查结论": "详细的检查结论...",
+            //     "检查描述": "详细的检查描述..."
+            //   }
+            // ]
+
+            if (imagingData.length > 0) {
+                // 合并所有记录的检查描述和结论
+                let combinedDescription = '';
+                let combinedConclusion = '';
+                let doctorName = '';
+
+                imagingData.forEach((record, index) => {
+                    console.log(`📋 处理记录 ${index + 1}:`, {
+                        StudyID: record.StudyID,
+                        hasDoctor: !!record['医生'],
+                        hasDescription: !!record['检查描述'],
+                        hasConclusion: !!record['检查结论']
+                    });
+
+                    // 合并检查描述
+                    if (record['检查描述']) {
+                        if (combinedDescription) {
+                            combinedDescription += '\n\n' + '='.repeat(50) + '\n\n';
+                        }
+                        combinedDescription += record['检查描述'];
+                    }
+
+                    // 合并检查结论
+                    if (record['检查结论']) {
+                        if (combinedConclusion) {
+                            combinedConclusion += '\n\n';
+                        }
+                        combinedConclusion += record['检查结论'];
+                    }
+
+                    // 设置医生姓名（以最后一条记录的医生为准）
+                    if (record['医生']) {
+                        doctorName = record['医生'];
+                    }
+                });
+
+                // 填充表单字段
+                const doctorNameInput = document.getElementById('imagingDoctorName');
+                if (doctorNameInput && doctorName) {
+                    doctorNameInput.value = doctorName;
+                    console.log('👨‍⚕️ 已填充影像科医生姓名:', doctorName);
+                }
+
+                const descriptionTextarea = document.getElementById('examDescription');
+                if (descriptionTextarea) {
+                    descriptionTextarea.value = combinedDescription;
+                    console.log('📝 已填充检查描述，长度:', combinedDescription.length, '字符');
+                }
+
+                const conclusionTextarea = document.getElementById('examConclusion');
+                if (conclusionTextarea) {
+                    conclusionTextarea.value = combinedConclusion;
+                    console.log('📋 已填充检查结论，长度:', combinedConclusion.length, '字符');
+                }
+
+                // 显示成功消息
+                NotificationHelper.success(`影像科室数据填充完成，包含 ${imagingData.length} 条检查记录`, '数据填充成功');
+
+            } else {
+                NotificationHelper.warning('影像科室数据为空，无法填充表单', '数据为空');
+            }
+
+            console.log('🎉 影像科室数据填充完成！');
+        }
+
+        // 填充仪器室数据表单
+        async function fillInstrumentRoomForm(instrumentData, examDate) {
+            console.log('🔄 开始fillInstrumentRoomForm调用');
+            console.log('📊 接收仪器室数据:', instrumentData.length, '条记录');
+            console.log('📅 体检日期:', examDate);
+
+            // 确保显示健康数据录入区域
+            const entryArea = document.getElementById('healthDataEntryArea');
+            if (entryArea) {
+                entryArea.classList.remove('hidden');
+            }
+
+            // 填充体检日期（如果提供了日期）
+            if (examDate) {
+                const instrumentDateInput = document.getElementById('instrumentDate');
+                if (instrumentDateInput) {
+                    // 将ISO日期格式转换为YYYY-MM-DD格式
+                    const date = new Date(examDate);
+                    const formattedDate = date.toISOString().split('T')[0];
+                    instrumentDateInput.value = formattedDate;
+                    console.log('📅 已填充仪器室检查日期:', formattedDate);
+                }
+            }
+
+            // 仪器室API返回的数据结构：
+            // [
+            //   {
+            //     "StudyID": "2301110023",
+            //     "检查结果": "正常心电图"
+            //   }
+            // ]
+
+            if (instrumentData.length > 0) {
+                // 合并所有记录的检查结果
+                let combinedResult = '';
+                let doctorName = '';
+
+                instrumentData.forEach((record, index) => {
+                    console.log(`📋 处理记录 ${index + 1}:`, {
+                        StudyID: record.StudyID,
+                        hasResult: !!record['检查结果'],
+                        hasDoctor: !!record['医生']
+                    });
+
+                    // 合并检查结果
+                    if (record['检查结果']) {
+                        if (combinedResult) {
+                            combinedResult += '\n\n' + '='.repeat(50) + '\n\n';
+                        }
+                        combinedResult += record['检查结果'];
+                    }
+
+                    // 设置医生姓名（以最后一条记录的医生为准）
+                    if (record['医生']) {
+                        doctorName = record['医生'];
+                    }
+                });
+
+                // 填充表单字段
+                const resultTextarea = document.getElementById('instrumentResult');
+                if (resultTextarea) {
+                    resultTextarea.value = combinedResult;
+                    console.log('📝 已填充检查结果，长度:', combinedResult.length, '字符');
+                }
+
+                // 填充医生姓名
+                const doctorInput = document.getElementById('instrumentDoctor');
+                if (doctorInput && doctorName) {
+                    doctorInput.value = doctorName;
+                    console.log('👨‍⚕️ 已填充医生姓名:', doctorName);
+                }
+
+                // 显示成功消息
+                NotificationHelper.success(`仪器室数据填充完成，包含 ${instrumentData.length} 条检查记录`, '数据填充成功');
+
+            } else {
+                NotificationHelper.warning('仪器室数据为空，无法填充表单', '数据为空');
+            }
+
+            console.log('🎉 仪器室数据填充完成！');
+        }
+
+        // 保存常规科室数据到后端
+        async function saveGeneralDepartmentDataToBackend() {
+            if (!window.selectedCustomerId) {
+                NotificationHelper.validationError('请先选择检客，然后再保存常规科室数据');
+                return;
+            }
+
+            const examId = document.getElementById('medicalExamId').value;
+            const assessmentDate = document.getElementById('assessmentDate').value;
+            const doctorName = document.getElementById('generalDoctorName').value;
+            const departmentSelect = document.getElementById('departmentSelect');
+            const selectedDepartmentId = departmentSelect.value;
+            const selectedDepartmentName = departmentSelect.options[departmentSelect.selectedIndex]?.text || '';
+
+            if (!examId || !assessmentDate || !selectedDepartmentId) {
+                NotificationHelper.validationError('请填写完整的常规科室信息：体检ID、评估日期和科室都是必填项');
+                return;
+            }
+
+            // 收集常规科室项目数据
+            const generalItems = document.querySelectorAll('#generalAssessmentItems .border');
+            if (generalItems.length === 0) {
+                NotificationHelper.validationError('请先添加评估项目或获取体检结果，然后再保存数据');
+                return;
+            }
+
+            const assessmentItems = [];
+            let incompleteItems = 0;
+
+            generalItems.forEach((item, index) => {
+                const itemName = item.querySelector('input[name="itemName"]')?.value;
+                const itemResult = item.querySelector('input[name="itemResult"]')?.value;
+
+                if (itemName && itemResult) {
+                    assessmentItems.push({
+                        itemName,
+                        itemResult,
+                        departmentName: selectedDepartmentName,
+                        departmentId: selectedDepartmentId
+                    });
+                } else if (itemName || itemResult) {
+                    incompleteItems++;
+                }
+            });
+
+            if (assessmentItems.length === 0) {
+                NotificationHelper.validationError('所有评估项目都缺少必要信息（项目名称和项目结果），请完善后重试');
+                return;
+            }
+
+            if (incompleteItems > 0) {
+                NotificationHelper.warning(`发现 ${incompleteItems} 个不完整的评估项目已跳过，只保存完整的项目`, '数据验证警告');
+            }
+
+            const savingNotification = NotificationHelper.saving(`正在保存 ${assessmentItems.length} 项常规科室数据到数据库...`);
+
+            try {
+                const response = await fetch(`${CONFIG.api.baseURL}/health-assessments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        customerId: window.selectedCustomerId,
+                        medicalExamId: examId,
+                        assessmentDate,
+                        department: selectedDepartmentName,
+                        doctor: doctorName,
+                        assessmentData: assessmentItems,
+                        summary: `常规科室评估 - ${selectedDepartmentName} - 共${assessmentItems.length}项`
+                    })
+                });
+
+                const result = await response.json();
+
+                // 关闭保存提示
+                if (savingNotification) {
+                    savingNotification.remove();
+                }
+
+                if (result.status === 'Success') {
+                    NotificationHelper.complete(`成功保存 ${assessmentItems.length} 项常规科室数据，体检ID: ${examId}`, '保存成功');
+
+                    // 更新检客最后体检日期
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        await window.API.customer.updateLastHealthCheckDate(window.selectedCustomerIdentityCard, today);
+                        console.log('✅ 检客最后体检日期已更新');
+
+                        // 刷新今日新增体检检客列表
+                        loadTodayCustomers();
+                    } catch (updateError) {
+                        console.warn('⚠️ 更新最后体检日期失败:', updateError);
+                    }
+
+                    // 显示详细信息
+                    setTimeout(() => {
+                        NotificationHelper.tip(`数据已保存到系统中，检客可以在查询页面查看这些常规科室结果`, '操作提示');
+                    }, 1000);
+
+                    // 清空表单
+                    clearGeneralForm();
+                } else {
+                    if (result.message && result.message.includes('存在')) {
+                        NotificationHelper.error(result.message, '数据重复错误', true);
+                    } else {
+                        NotificationHelper.error(result.message || '常规科室数据保存失败，请重试', '保存失败');
+                    }
+                }
+
+            } catch (error) {
+                console.error('保存常规科室数据失败:', error);
+                // 关闭保存提示
+                if (savingNotification) {
+                    savingNotification.remove();
+                }
+
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    NotificationHelper.networkError('网络连接失败，无法保存数据，请检查网络连接后重试', () => {
+                        saveGeneralDepartmentDataToBackend(); // 重试函数
+                    });
+                } else if (error.message.includes('500')) {
+                    NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
+                } else {
+                    NotificationHelper.error('保存常规科室数据失败: ' + error.message, '保存错误');
+                }
+            }
+        }
+
+        // 保存影像科室数据到后端
+        async function saveImagingDepartmentDataToBackend() {
+            if (!window.selectedCustomerId) {
+                NotificationHelper.validationError('请先选择检客，然后再保存影像科室数据');
+                return;
+            }
+
+            const examId = document.getElementById('medicalExamId').value;
+            const examDate = document.getElementById('examDate').value;
+            const doctorName = document.getElementById('imagingDoctorName').value;
+            const examDescription = document.getElementById('examDescription').value;
+            const examConclusion = document.getElementById('examConclusion').value;
+            const departmentSelect = document.getElementById('departmentSelect');
+            const selectedDepartmentId = departmentSelect.value;
+            const selectedDepartmentName = departmentSelect.options[departmentSelect.selectedIndex]?.text || '';
+
+            if (!examId || !examDate || !doctorName || !examDescription || !examConclusion || !selectedDepartmentId) {
+                NotificationHelper.validationError('请填写完整的影像科室信息：体检ID、检查日期、医生、检查描述、检查结论和科室都是必填项');
+                return;
+            }
+
+            const loadingNotification = NotificationHelper.saving('正在保存影像科室数据，请稍候...');
+
+            try {
+                // 构建影像科室数据结构
+                const imagingData = {
+                    customerId: window.selectedCustomerId,
+                    assessmentDate: examDate,
+                    department: selectedDepartmentName,
+                    doctor: doctorName,
+                    assessmentData: [
+                        {
+                            itemName: '检查描述',
+                            itemResult: examDescription,
+                            departmentName: selectedDepartmentName,
+                            departmentId: selectedDepartmentId
+                        },
+                        {
+                            itemName: '检查结论',
+                            itemResult: examConclusion,
+                            departmentName: selectedDepartmentName,
+                            departmentId: selectedDepartmentId
+                        }
+                    ],
+                    summary: `影像科室评估 - ${selectedDepartmentName}`,
+                    medicalExamId: examId,
+                    createdBy: window.userId || 'system'
+                };
+
+                console.log('🔄 准备保存影像科室数据:', imagingData);
+
+                // 调用API保存数据
+                const response = await window.API.imagingDepartment.saveImagingDepartmentData(imagingData);
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (result.status === 'Success') {
+                        NotificationHelper.success('影像科室数据保存成功！', '保存成功');
+
+                        // 更新检客最后体检日期
+                        try {
+                            const today = new Date().toISOString().split('T')[0];
+                            await window.API.customer.updateLastHealthCheckDate(window.selectedCustomerIdentityCard, today);
+                            console.log('✅ 检客最后体检日期已更新');
+
+                            // 刷新今日新增体检检客列表
+                            loadTodayCustomers();
+                        } catch (updateError) {
+                            console.warn('⚠️ 更新最后体检日期失败:', updateError);
+                        }
+
+                        // 清空表单（可选）
+                        document.getElementById('imagingHealthForm').reset();
+
+                        console.log('✅ 影像科室数据保存成功:', result.data);
+                    } else {
+                        throw new Error(result.message || '保存失败');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+            } catch (error) {
+                console.error('保存影像科室数据失败:', error);
+
+                if (error.message.includes('fetch')) {
+                    NotificationHelper.networkError('网络连接失败，无法保存影像科室数据，请检查网络设置后重试', () => {
+                        saveImagingDepartmentDataToBackend(); // 重试函数
+                    });
+                } else if (error.message.includes('500')) {
+                    NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
+                } else {
+                    NotificationHelper.error('保存影像科室数据失败: ' + error.message, '保存错误');
+                }
+            } finally {
+                // 关闭加载提示
+                if (loadingNotification) {
+                    loadingNotification.remove();
+                }
+            }
+        }
+
+        // 保存仪器室数据到后端
+        async function saveInstrumentRoomDataToBackend() {
+            if (!window.selectedCustomerId) {
+                NotificationHelper.validationError('请先选择检客，然后再保存仪器室数据');
+                return;
+            }
+
+            const examId = document.getElementById('medicalExamId').value;
+            const instrumentDate = document.getElementById('instrumentDate').value;
+            const doctorName = document.getElementById('instrumentDoctor').value;
+            const instrumentResult = document.getElementById('instrumentResult').value;
+            const departmentSelect = document.getElementById('departmentSelect');
+            const selectedDepartmentId = departmentSelect.value;
+            const selectedDepartmentName = departmentSelect.options[departmentSelect.selectedIndex]?.text || '';
+
+            if (!examId || !instrumentDate || !instrumentResult || !selectedDepartmentId) {
+                NotificationHelper.validationError('请填写完整的仪器室信息：体检ID、检查日期、检查结果和科室都是必填项');
+                return;
+            }
+
+            const loadingNotification = NotificationHelper.saving('正在保存仪器室数据，请稍候...');
+
+            try {
+                // 构建仪器室数据结构
+                const instrumentData = {
+                    customerId: window.selectedCustomerId,
+                    assessmentDate: instrumentDate,
+                    department: selectedDepartmentName,
+                    doctor: doctorName,
+                    assessmentData: [
+                        {
+                            itemName: '检查结果',
+                            itemResult: instrumentResult,
+                            departmentName: selectedDepartmentName,
+                            departmentId: selectedDepartmentId
+                        }
+                    ],
+                    summary: `仪器室评估 - ${selectedDepartmentName}`,
+                    medicalExamId: examId,
+                    createdBy: window.userId || 'system'
+                };
+
+                console.log('🔄 准备保存仪器室数据:', instrumentData);
+
+                // 调用API保存数据
+                const response = await window.API.instrumentRoom.saveInstrumentRoomData(instrumentData);
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (result.status === 'Success') {
+                        NotificationHelper.success('仪器室数据保存成功！', '保存成功');
+
+                        // 更新检客最后体检日期
+                        try {
+                            const today = new Date().toISOString().split('T')[0];
+                            await window.API.customer.updateLastHealthCheckDate(window.selectedCustomerIdentityCard, today);
+                            console.log('✅ 检客最后体检日期已更新');
+
+                            // 刷新今日新增体检检客列表
+                            loadTodayCustomers();
+                        } catch (updateError) {
+                            console.warn('⚠️ 更新最后体检日期失败:', updateError);
+                        }
+
+                        // 清空表单（可选）
+                        document.getElementById('instrumentHealthForm').reset();
+
+                        console.log('✅ 仪器室数据保存成功:', result.data);
+                    } else {
+                        throw new Error(result.message || '保存失败');
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+            } catch (error) {
+                console.error('保存仪器室数据失败:', error);
+
+                if (error.message.includes('fetch')) {
+                    NotificationHelper.networkError('网络连接失败，无法保存仪器室数据，请检查网络设置后重试', () => {
+                        saveInstrumentRoomDataToBackend(); // 重试函数
+                    });
+                } else if (error.message.includes('500')) {
+                    NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
+                } else {
+                    NotificationHelper.error('保存仪器室数据失败: ' + error.message, '保存错误');
+                }
+            } finally {
+                // 关闭加载提示
+                if (loadingNotification) {
+                    loadingNotification.remove();
+                }
+            }
+        }
+
+        // 保存检验科数据到后端
+        async function saveLaboratoryDataToBackend() {
+            if (!window.selectedCustomerId) {
+                NotificationHelper.validationError('请先选择检客，然后再保存检验数据');
+                return;
+            }
+
+            const examId = document.getElementById('medicalExamId').value;
+            const checkDate = document.getElementById('examDate').value;
+
+            if (!examId || !checkDate) {
+                NotificationHelper.validationError('请填写完整的体检信息：体检ID和检验日期都是必填项');
+                return;
+            }
+
+            // 收集检验项目数据
+            const labTestItems = document.querySelectorAll('#labTestItems .border');
+            if (labTestItems.length === 0) {
+                NotificationHelper.validationError('请先添加检验项目或获取体检结果，然后再保存数据');
+                return;
+            }
+
+            const laboratoryItems = [];
+            let incompleteItems = 0;
+
+            labTestItems.forEach((item, index) => {
+                const testName = item.querySelector('input[name="testName"]')?.value;
+                const testResult = item.querySelector('input[name="testResult"]')?.value;
+                const referenceValue = item.querySelector('input[name="referenceValue"]')?.value;
+                const abnormalStatus = item.querySelector('select[name="abnormalStatus"]')?.value;
+                const unit = item.querySelector('input[name="unit"]')?.value;
+                const doctor = item.querySelector('input[name="doctor"]')?.value;
+
+                if (testName && testResult) {
+                    laboratoryItems.push({
+                        testCategory: '检验科数据',
+                        testName,
+                        testResult,
+                        referenceValue,
+                        abnormalFlag: abnormalStatus,
+                        unit,
+                        doctor: doctor || ''
+                    });
+                } else if (testName || testResult) {
+                    incompleteItems++;
+                }
+            });
+
+            if (laboratoryItems.length === 0) {
+                NotificationHelper.validationError('所有检验项目都缺少必要信息（检验名称和检验结果），请完善后重试');
+                return;
+            }
+
+            if (incompleteItems > 0) {
+                NotificationHelper.warning(`发现 ${incompleteItems} 个不完整的检验项目已跳过，只保存完整的项目`, '数据验证警告');
+            }
+
+            const savingNotification = NotificationHelper.saving(`正在保存 ${laboratoryItems.length} 项检验数据到数据库...`);
+
+            try {
+                const response = await fetch(`${CONFIG.api.baseURL}/laboratory-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        customerId: window.selectedCustomerId,
+                        examId,
+                        checkDate,
+                        laboratoryItems,
+                        doctor: ''
+                    })
+                });
+
+                const result = await response.json();
+
+                // 关闭保存提示
+                if (savingNotification) {
+                    savingNotification.remove();
+                }
+
+                if (result.status === 'Success') {
+                    NotificationHelper.complete(`成功保存 ${laboratoryItems.length} 项检验数据，体检ID: ${examId}`, '保存成功');
+
+                    // 更新检客最后体检日期
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        await window.API.customer.updateLastHealthCheckDate(window.selectedCustomerIdentityCard, today);
+                        console.log('✅ 检客最后体检日期已更新');
+
+                        // 刷新今日新增体检检客列表
+                        loadTodayCustomers();
+                    } catch (updateError) {
+                        console.warn('⚠️ 更新最后体检日期失败:', updateError);
+                    }
+
+                    // 显示详细信息
+                    setTimeout(() => {
+                        NotificationHelper.tip(`数据已保存到系统中，检客可以在查询页面查看这些检验结果`, '操作提示');
+                    }, 1000);
+
+                    // 清空表单
+                    clearLabForm();
+                } else {
+                    if (result.message && result.message.includes('存在')) {
+                        NotificationHelper.error(result.message, '数据重复错误', true);
+                    } else {
+                        NotificationHelper.error(result.message || '检验科数据保存失败，请重试', '保存失败');
+                    }
+                }
+
+            } catch (error) {
+                console.error('保存检验科数据失败:', error);
+                // 关闭保存提示
+                if (savingNotification) {
+                    savingNotification.remove();
+                }
+
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    NotificationHelper.networkError('网络连接失败，无法保存数据，请检查网络连接后重试', () => {
+                        saveLaboratoryDataToBackend(); // 重试函数
+                    });
+                } else if (error.message.includes('500')) {
+                    NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
+                } else {
+                    NotificationHelper.error('保存检验科数据失败: ' + error.message, '保存错误');
+                }
+            }
+        }
+
+    
+        // 获取科室显示名称
+        function getDepartmentDisplayName(departmentType) {
+            const departmentNames = {
+                'laboratory': '检验科',
+                'general': '常规科室',
+                'imaging': '影像科室',
+                'instrument': '仪器室'
+            };
+            return departmentNames[departmentType] || '未知科室';
+        }
+
+        // 获取实际的科室名称用于API调用
+        function getActualDepartmentName(departmentType) {
+            // 从科室选择下拉框中获取当前选中的实际科室名称
+            const departmentSelect = document.getElementById('departmentSelect');
+            if (departmentSelect && departmentSelect.selectedIndex > 0) {
+                return departmentSelect.options[departmentSelect.selectedIndex].text;
+            }
+
+            // 如果无法从选择框获取，使用默认映射
+            const actualNames = {
+                'laboratory': '检验科',
+                'general': '内科', // 常规科室默认为内科
+                'imaging': '影像科',
+                'instrument': '仪器室'
+            };
+            return actualNames[departmentType] || departmentType;
+        }
+
+        // 启用/禁用调阅按钮
+        function updateLookupExamButton() {
+            const identityCard = document.getElementById('customerIdentityCard').value;
+            const departmentSelect = document.getElementById('departmentSelect');
+            const lookupBtn = document.getElementById('lookupExamBtn');
+
+            // 调阅按钮需要身份证号和已选择的具体科室才能启用
+            const hasSelectedDepartment = departmentSelect && departmentSelect.selectedIndex > 0;
+
+            if (identityCard && window.selectedDepartmentType && hasSelectedDepartment) {
+                lookupBtn.disabled = false;
+                lookupBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                lookupBtn.textContent = '调阅';
+                lookupBtn.innerHTML = '<i class="fas fa-search mr-2"></i>调阅';
+            } else {
+                lookupBtn.disabled = true;
+                lookupBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                // 根据缺失的条件显示不同的提示文本
+                if (!identityCard) {
+                    lookupBtn.innerHTML = '<i class="fas fa-search mr-2"></i>请先输入身份证号';
+                } else if (!window.selectedDepartmentType) {
+                    lookupBtn.innerHTML = '<i class="fas fa-search mr-2"></i>请先选择科室类型';
+                } else if (!hasSelectedDepartment) {
+                    lookupBtn.innerHTML = '<i class="fas fa-search mr-2"></i>请先选择具体科室';
+                } else {
+                    lookupBtn.innerHTML = '<i class="fas fa-search mr-2"></i>调阅';
+                }
+            }
+        }
+
+        // 加载今日新增体检检客
+        async function loadTodayCustomers() {
+            try {
+                console.log('🔄 正在加载今日新增体检检客...');
+                const response = await window.API.customer.getTodayHealthChecks();
+
+                if (response.status === 'Success') {
+                    // 确保customers是数组
+                    let customers = response.data || [];
+
+                    // 如果返回的不是数组，尝试提取recordset
+                    if (!Array.isArray(customers) && customers.recordset) {
+                        customers = customers.recordset;
+                    }
+
+                    // 如果仍然不是数组，设为空数组
+                    if (!Array.isArray(customers)) {
+                        console.warn('返回的数据格式异常:', response.data);
+                        customers = [];
+                    }
+
+                    const tableBody = document.getElementById('todayCustomersTableBody');
+                    const noDataMessage = document.getElementById('noTodayCustomersMessage');
+
+                    if (customers.length === 0) {
+                        tableBody.innerHTML = '';
+                        noDataMessage.classList.remove('hidden');
+                        console.log('ℹ️ 今日暂无新增体检检客');
+                    } else {
+                        noDataMessage.classList.add('hidden');
+                        let tableHtml = '';
+
+                        customers.forEach(customer => {
+                            const createdDate = customer.CreatedAt ?
+                                new Date(customer.CreatedAt).toLocaleString('zh-CN', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) : '-';
+
+                            tableHtml += `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.IdentityCard || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${customer.Name || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.Gender || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.Age || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${customer.Phone || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${createdDate}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <button onclick="selectTodayCustomer('${customer.IdentityCard}', '${customer.Name}', '${customer.ID}')"
+                                                class="text-blue-600 hover:text-blue-800 font-medium">
+                                            选择
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        tableBody.innerHTML = tableHtml;
+                        console.log(`✅ 成功加载 ${customers.length} 位今日新增体检检客`);
+                    }
+                } else {
+                    console.error('❌ 获取今日新增体检检客失败:', response.message);
+                    const noDataMessage = document.getElementById('noTodayCustomersMessage');
+                    noDataMessage.classList.remove('hidden');
+                    document.getElementById('todayCustomersTableBody').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('❌ 加载今日新增体检检客时发生错误:', error);
+                const noDataMessage = document.getElementById('noTodayCustomersMessage');
+                noDataMessage.classList.remove('hidden');
+                document.getElementById('todayCustomersTableBody').innerHTML = '';
+            }
+        }
+
+        // 选择今日检客
+        function selectTodayCustomer(identityCard, name, customerId) {
+            console.log(`👤 选择今日检客: ${name} (${identityCard})`);
+
+            // 填充检客信息
+            document.getElementById('customerIdentityCard').value = identityCard;
+            window.selectedCustomerId = customerId;
+            window.selectedCustomerIdentityCard = identityCard;
+
+            // 显示检客信息
+            const selectedInfo = document.getElementById('selectedCustomerInfo');
+            if (selectedInfo) {
+                selectedInfo.classList.remove('hidden');
+                selectedInfo.querySelector('span').textContent = `已选择: ${name} (${identityCard})`;
+            }
+
+            // 显示成功提示
+            NotificationHelper.success(`已选择检客: ${name}`, '选择成功');
+
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+        }
+
+        // 刷新今日检客列表
+        function refreshTodayCustomers() {
+            loadTodayCustomers();
+            NotificationHelper.info('今日检客列表已刷新', '刷新完成');
+        }
+
+        // 清空表单函数
+        function clearLabForm() {
+            document.getElementById('labHealthForm').reset();
+            document.getElementById('labTestItems').innerHTML = '';
+        }
+
+        function clearGeneralForm() {
+            document.getElementById('generalHealthForm').reset();
+            document.getElementById('generalAssessmentItems').innerHTML = '';
+        }
+
+        function clearImagingForm() {
+            document.getElementById('imagingHealthForm').reset();
+        }
+
+        function clearInstrumentForm() {
+            document.getElementById('instrumentHealthForm').reset();
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置今天的日期为默认值
+            const today = new Date().toISOString().split('T')[0];
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+
+            // 加载今日新增体检检客
+            loadTodayCustomers();
+
+            // 添加检验科表单提交事件处理器
+            const labHealthForm = document.getElementById('labHealthForm');
+            if (labHealthForm) {
+                labHealthForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveLaboratoryDataToBackend();
+                });
+            }
+
+            // 添加其他表单提交事件处理器
+            const generalHealthForm = document.getElementById('generalHealthForm');
+            if (generalHealthForm) {
+                generalHealthForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveGeneralDepartmentDataToBackend();
+                });
+            }
+
+            const imagingHealthForm = document.getElementById('imagingHealthForm');
+            if (imagingHealthForm) {
+                imagingHealthForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveImagingDepartmentDataToBackend();
+                });
+            }
+
+            const instrumentHealthForm = document.getElementById('instrumentHealthForm');
+            if (instrumentHealthForm) {
+                instrumentHealthForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveInstrumentRoomDataToBackend();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

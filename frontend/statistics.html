@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计分析 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+    <script src="js/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-dna text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">干细胞治疗档案管理系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="dashboard.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>仪表板
+                    </a>
+                    <a href="customers.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-users mr-2"></i>检客管理
+                    </a>
+                    <a href="health-data.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-heartbeat mr-2"></i>健康数据
+                    </a>
+                    <a href="stem-cell.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-microscope mr-2"></i>干细胞管理
+                    </a>
+                    <a href="reports.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-file-medical mr-2"></i>报告查看
+                    </a>
+                    <a href="statistics.html" class="nav-link hover:text-blue-200 transition-colors text-blue-200">
+                        <i class="fas fa-chart-bar mr-2"></i>统计分析
+                    </a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:text-blue-200 transition-colors">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="username">用户</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>个人资料
+                            </a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>系统设置
+                            </a>
+                            <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">统计分析</h2>
+            <p class="text-gray-600">查看系统各项数据的统计分析结果</p>
+        </div>
+
+        <!-- 时间筛选 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">开始日期</label>
+                        <input type="date" id="statsStartDate" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">结束日期</label>
+                        <input type="date" id="statsEndDate" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="applyStatsFilter" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>应用筛选
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <button id="exportStatsBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>导出统计
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">总检客数</p>
+                        <p class="text-3xl font-bold text-blue-600" id="statsTotalCustomers">-</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">干细胞患者</p>
+                        <p class="text-3xl font-bold text-green-600" id="statsStemCellPatients">-</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-dna text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">本月回输</p>
+                        <p class="text-3xl font-bold text-purple-600" id="statsMonthlyInfusions">-</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-syringe text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">治疗效果分析</p>
+                        <p class="text-3xl font-bold text-teal-600" id="statsTreatmentEffectiveness">-</p>
+                    </div>
+                    <div class="bg-teal-100 p-3 rounded-full">
+                        <i class="fas fa-heartbeat text-teal-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 病种分布和治疗效果详细统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">病种分布详情</h3>
+                <div id="statsDiseaseDistribution" class="space-y-2">
+                    <!-- 动态加载病种分布数据 -->
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">治疗效果详情</h3>
+                <div id="statsTreatmentEffectDetails" class="space-y-2">
+                    <!-- 动态加载治疗效果数据 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计图表 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">月度回输趋势</h3>
+                <div id="monthlyTrendChart" class="h-64 flex items-center justify-center text-gray-500">
+                    <i class="fas fa-chart-area text-4xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">患者增长趋势</h3>
+                <div id="patientGrowthChart" class="h-64 flex items-center justify-center text-gray-500">
+                    <i class="fas fa-chart-line text-4xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">治疗效果分析图表</h3>
+                <div id="treatmentEffectChart" class="h-64 flex items-center justify-center text-gray-500">
+                    <i class="fas fa-chart-bar text-4xl"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">病种分布图表</h3>
+                <div id="diseaseDistributionChart" class="h-64 flex items-center justify-center text-gray-500">
+                    <i class="fas fa-chart-pie text-4xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计数据表格 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">详细统计数据</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">统计项目</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">本期数据</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">上期数据</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">变化率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statisticsTable" class="bg-white divide-y divide-gray-200">
+                        <!-- 动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 干细胞治疗档案管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/path-helper.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/statistics.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单调试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        nav { background: #333; color: white; padding: 1rem; }
+        nav h1 { margin: 0; font-size: 1.5rem; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-button { margin: 5px; padding: 10px; cursor: pointer; }
+        .result { margin-top: 10px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav>
+        <h1 id="navTitle">默认系统名称</h1>
+    </nav>
+
+    <div class="test-section">
+        <h2>系统名称调试测试</h2>
+        <button class="test-button" onclick="testTitleUpdate()">1. 测试页面标题更新</button>
+        <button class="test-button" onclick="testNavUpdate()">2. 测试导航栏更新</button>
+        <button class="test-button" onclick="testAPIUpdate()">3. 测试API更新</button>
+        <button class="test-button" onclick="checkElements()">4. 检查DOM元素</button>
+        <div class="result" id="testResult">等待测试...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>实时状态监控</h2>
+        <p>页面标题: <span id="pageTitle">-</span></p>
+        <p>导航栏标题: <span id="navStatus">-</span></p>
+        <p>localStorage: <span id="localStorageStatus">-</span></p>
+        <p>最后更新: <span id="lastUpdate">-</span></p>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+
+    <script>
+        let testCount = 0;
+
+        // 更新实时状态
+        function updateStatus() {
+            document.getElementById('pageTitle').textContent = document.title;
+
+            const navTitle = document.getElementById('navTitle');
+            document.getElementById('navStatus').textContent = navTitle ? navTitle.textContent : '元素未找到';
+
+            document.getElementById('localStorageStatus').textContent = localStorage.getItem('systemName') || '未设置';
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // 测试页面标题更新
+        function testTitleUpdate() {
+            testCount++;
+            const newTitle = `测试标题 ${testCount} - ${new Date().getSeconds()}`;
+            document.title = newTitle;
+
+            showResult(`✅ 页面标题已更新为: ${newTitle}`);
+            updateStatus();
+        }
+
+        // 测试导航栏更新
+        function testNavUpdate() {
+            testCount++;
+            const newNavTitle = `测试导航栏 ${testCount}`;
+            const navTitle = document.getElementById('navTitle');
+
+            if (navTitle) {
+                navTitle.textContent = newNavTitle;
+                showResult(`✅ 导航栏标题已更新为: ${newNavTitle}`);
+            } else {
+                showResult(`❌ 导航栏元素未找到`);
+            }
+
+            updateStatus();
+        }
+
+        // 测试API更新
+        async function testAPIUpdate() {
+            testCount++;
+            const newName = `API测试系统 ${testCount}`;
+
+            try {
+                const response = await window.API.service.put('/settings/general', {
+                    systemName: newName
+                });
+
+                // 立即应用到前端
+                document.title = `简单调试页面 - ${newName}`;
+                const navTitle = document.getElementById('navTitle');
+                if (navTitle) {
+                    navTitle.textContent = newName;
+                }
+                localStorage.setItem('systemName', newName);
+
+                showResult(`✅ API更新成功: ${newName}`);
+
+            } catch (error) {
+                showResult(`❌ API更新失败: ${error.message}`);
+            }
+
+            updateStatus();
+        }
+
+        // 检查DOM元素
+        function checkElements() {
+            const checks = {
+                'nav h1': !!document.querySelector('nav h1'),
+                '#navTitle': !!document.getElementById('navTitle'),
+                'document.title': !!document.title,
+                'localStorage': !!localStorage.getItem('systemName')
+            };
+
+            let result = 'DOM元素检查结果:\n';
+            for (const [selector, found] of Object.entries(checks)) {
+                result += `  ${selector}: ${found ? '✅' : '❌'}\n`;
+            }
+
+            showResult(result);
+        }
+
+        // 显示测试结果
+        function showResult(message) {
+            const resultDiv = document.getElementById('testResult');
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.innerHTML = `<strong>[${timestamp}]</strong>\n${message}`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('页面加载完成');
+            updateStatus();
+            showResult('🚀 调试页面已准备就绪');
+        });
+
+        // 每秒更新一次状态
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>

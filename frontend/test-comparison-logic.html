@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对比报告提示逻辑测试</title>
+    <link rel="stylesheet" href="css/tailwind.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">对比报告提示逻辑测试</h1>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">测试场景</h2>
+            <div class="space-y-4">
+                <!-- 测试重复点击 -->
+                <div class="border rounded p-4">
+                    <h3 class="font-medium mb-2">1. 重复点击测试</h3>
+                    <p class="text-gray-600 mb-3">测试场景：没有对比报告时，快速连续点击"生成对比报告"按钮</p>
+                    <button onclick="testDuplicateClick()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        测试重复点击
+                    </button>
+                </div>
+
+                <!-- 测试生成中的状态提示 -->
+                <div class="border rounded p-4">
+                    <h3 class="font-medium mb-2">2. 生成状态提示测试</h3>
+                    <p class="text-gray-600 mb-3">测试场景：模拟AI生成过程中的各种状态提示</p>
+                    <div class="space-x-2">
+                        <button onclick="testGeneratingStatus()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            模拟生成中
+                        </button>
+                        <button onclick="testCompleteStatus()" class="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">
+                            模拟生成完成
+                        </button>
+                        <button onclick="testFailedStatus()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            模拟生成失败
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 测试错误提示 -->
+                <div class="border rounded p-4">
+                    <h3 class="font-medium mb-2">3. 错误提示测试</h3>
+                    <p class="text-gray-600 mb-3">测试场景：各种错误情况的提示信息</p>
+                    <div class="space-x-2">
+                        <button onclick="testNetworkError()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
+                            网络错误
+                        </button>
+                        <button onclick="testDuplicateRequest()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                            重复请求
+                        </button>
+                        <button onclick="testServiceUnavailable()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                            服务不可用
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试结果展示区域 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">测试结果</h2>
+            <div id="testResults" class="space-y-2 text-sm text-gray-600">
+                <p>点击上方按钮开始测试，结果将显示在这里...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入通知系统 -->
+    <script src="js/utils.js"></script>
+
+    <script>
+        // 模拟 ReportsManager 类的部分逻辑
+        let isGeneratingReport = false;
+        let testClickCount = 0;
+
+        function addTestResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = {
+                'success': 'text-green-600',
+                'error': 'text-red-600',
+                'warning': 'text-yellow-600',
+                'info': 'text-blue-600'
+            }[type] || 'text-gray-600';
+
+            const resultHtml = `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+
+        function testDuplicateClick() {
+            addTestResult('开始测试重复点击场景...', 'info');
+
+            // 第一次点击
+            setTimeout(() => {
+                addTestResult('第一次点击：开始生成对比报告', 'success');
+                isGeneratingReport = true;
+                NotificationHelper.success('对比报告生成已启动，AI正在分析数据，请耐心等待...', '生成启动');
+            }, 100);
+
+            // 模拟快速重复点击
+            setTimeout(() => {
+                testClickCount++;
+                addTestResult(`重复点击 #${testClickCount}：检测到报告正在生成中`, 'warning');
+
+                // 这里调用优化后的逻辑
+                if (isGeneratingReport) {
+                    NotificationHelper.info('对比报告正在生成中，请耐心等待AI处理完成', '处理中');
+                }
+            }, 500);
+
+            setTimeout(() => {
+                testClickCount++;
+                addTestResult(`重复点击 #${testClickCount}：再次点击，依然显示处理中提示`, 'warning');
+                if (isGeneratingReport) {
+                    NotificationHelper.info('对比报告正在生成中，请耐心等待AI处理完成', '处理中');
+                }
+            }, 800);
+
+            // 重置状态
+            setTimeout(() => {
+                isGeneratingReport = false;
+                testClickCount = 0;
+                addTestResult('测试完成：状态已重置', 'info');
+            }, 3000);
+        }
+
+        function testGeneratingStatus() {
+            addTestResult('测试生成中的状态提示...', 'info');
+
+            // 模拟长时间处理的状态提示
+            let statusNotification = NotificationHelper.processing('AI正在分析对比数据，这可能需要几分钟时间，请耐心等待...', 'AI处理中');
+
+            // 每30秒更新一次时间
+            let minutes = 0;
+            const interval = setInterval(() => {
+                minutes++;
+                if (statusNotification && statusNotification.textContent) {
+                    statusNotification.textContent = `AI正在分析对比数据，已处理 ${minutes} 分钟，请继续等待...`;
+                    addTestResult(`状态更新：已处理 ${minutes} 分钟`, 'info');
+                }
+
+                if (minutes >= 2) { // 测试2分钟后停止
+                    clearInterval(interval);
+                    if (statusNotification) {
+                        statusNotification.remove();
+                    }
+                    addTestResult('模拟处理完成，通知已移除', 'success');
+                }
+            }, 1000); // 每秒更新一次用于测试
+        }
+
+        function testCompleteStatus() {
+            addTestResult('测试生成完成状态提示...', 'info');
+            NotificationHelper.success('对比报告生成完成！AI分析已完成，可以查看报告', '生成完成');
+        }
+
+        function testFailedStatus() {
+            addTestResult('测试生成失败状态提示...', 'info');
+            NotificationHelper.error('对比报告生成失败: AI分析遇到问题，请重试', '生成失败');
+        }
+
+        function testNetworkError() {
+            addTestResult('测试网络错误提示...', 'info');
+            NotificationHelper.error('网络连接异常或AI服务暂时不可用，请稍后重试', '服务异常');
+        }
+
+        function testDuplicateRequest() {
+            addTestResult('测试重复请求提示...', 'info');
+            NotificationHelper.warning('已有相同的对比报告正在AI处理中，请勿重复提交', '处理中');
+        }
+
+        function testServiceUnavailable() {
+            addTestResult('测试服务不可用提示...', 'info');
+            NotificationHelper.error('报告生成时间较长，请稍后手动查看或联系管理员', '处理超时');
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            addTestResult('测试页面已加载，可以开始测试对比报告提示逻辑', 'success');
+        });
+    </script>
+</body>
+</html>

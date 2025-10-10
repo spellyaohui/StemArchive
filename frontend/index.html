@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>干细胞治疗档案管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="config.js"></script>
+    <script src="js/path-helper.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full text-center">
+            <div class="mb-6">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-dna text-white text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">干细胞治疗档案管理系统</h1>
+                <p class="text-gray-600">系统正在启动...</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+                <p class="text-sm text-gray-500">正在跳转到登录页面...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 等待配置加载完成
+        window.addEventListener('load', function() {
+            // 检查是否已登录
+            const token = localStorage.getItem('token');
+
+            if (token) {
+                // 验证token是否有效，使用配置中的API地址
+                const apiUrl = window.CONFIG ? window.CONFIG.api.baseURL : '/api';
+                fetch(`${apiUrl}/auth/verify`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'Success') {
+                        window.PathHelper.navigateTo('dashboard.html');
+                    } else {
+                        window.PathHelper.navigateTo('login.html');
+                    }
+                })
+                .catch(error => {
+                    console.error('Token验证失败:', error);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.PathHelper.navigateTo('login.html');
+                });
+            } else {
+                // 未登录，跳转到登录页面
+                setTimeout(() => {
+                    window.PathHelper.navigateTo('login.html');
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

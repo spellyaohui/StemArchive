@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>增强版通知系统测试</title>
+    <link rel="stylesheet" href="css/tailwind.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/fontawesome.min.css">
+    <script src="js/notificationManager.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">增强版通知系统测试</h1>
+
+        <!-- 统计信息 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">通知统计</h2>
+            <div id="notificationStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div class="text-center p-3 bg-blue-50 rounded">
+                    <div class="font-semibold text-blue-600">0</div>
+                    <div class="text-gray-600">活动通知</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded">
+                    <div class="font-semibold text-green-600">0</div>
+                    <div class="text-gray-600">队列通知</div>
+                </div>
+                <div class="text-center p-3 bg-yellow-50 rounded">
+                    <div class="font-semibold text-yellow-600">0</div>
+                    <div class="text-gray-600">最大限制</div>
+                </div>
+                <div class="text-center p-3 bg-purple-50 rounded">
+                    <div class="font-semibold text-purple-600">0</div>
+                    <div class="text-gray-600">去重记录</div>
+                </div>
+            </div>
+            <button onclick="updateStats()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                更新统计
+            </button>
+        </div>
+
+        <!-- 基础功能测试 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">基础功能测试</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button onclick="testSuccess()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    成功通知
+                </button>
+                <button onclick="testError()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                    错误通知
+                </button>
+                <button onclick="testWarning()" class="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700">
+                    警告通知
+                </button>
+                <button onclick="testInfo()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    信息通知
+                </button>
+            </div>
+        </div>
+
+        <!-- 高级功能测试 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">高级功能测试</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-medium mb-2">1. 去重测试</h3>
+                    <p class="text-gray-600 mb-3">快速连续点击，测试重复通知去重功能</p>
+                    <button onclick="testDuplicate()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                        测试去重（快速点击5次）
+                    </button>
+                </div>
+
+                <div>
+                    <h3 class="font-medium mb-2">2. 通知队列测试</h3>
+                    <p class="text-gray-600 mb-3">创建超过最大数量限制的通知，测试队列机制</p>
+                    <button onclick="testQueue()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                        创建8个通知（超过限制）
+                    </button>
+                </div>
+
+                <div>
+                    <h3 class="font-medium mb-2">3. 状态通知测试</h3>
+                    <p class="text-gray-600 mb-3">测试加载、处理等状态通知的更新和清除</p>
+                    <div class="space-x-2 space-y-2">
+                        <div>
+                            <button onclick="testLoading()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-2">
+                                加载中
+                            </button>
+                            <button onclick="testProcessing()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 mr-2">
+                                处理中
+                            </button>
+                            <button onclick="testSaving()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                保存中
+                            </button>
+                        </div>
+                        <div>
+                            <button onclick="testStatusUpdate()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mr-2">
+                                更新状态
+                            </button>
+                            <button onclick="testClearStatus()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                清除状态
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium mb-2">4. 批量操作测试</h3>
+                    <p class="text-gray-600 mb-3">测试批量创建、清除等操作</p>
+                    <div class="space-x-2">
+                        <button onclick="testBatchCreate()" class="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700">
+                            批量创建（10个）
+                        </button>
+                        <button onclick="testClearByType()" class="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700">
+                            清除错误通知
+                        </button>
+                        <button onclick="testClearAll()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            清除所有
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-medium mb-2">5. 特殊通知测试</h3>
+                    <p class="text-gray-600 mb-3">测试网络错误、数据库错误等特殊通知类型</p>
+                    <div class="space-x-2">
+                        <button onclick="testNetworkError()" class="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700">
+                            网络错误
+                        </button>
+                        <button onclick="testDatabaseError()" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800">
+                            数据库错误
+                        </button>
+                        <button onclick="testValidation()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                            验证错误
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配置测试 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">配置测试</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-medium mb-2">通知配置</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">最大通知数量</label>
+                            <input type="number" id="maxNotifications" value="5" min="1" max="10"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">去重窗口(ms)</label>
+                            <input type="number" id="deduplicationWindow" value="1000" min="100" step="100"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">启用去重</label>
+                            <select id="deduplicationEnabled" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                <option value="true">启用</option>
+                                <option value="false">禁用</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="updateConfig()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        应用配置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试日志 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">测试日志</h2>
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm text-gray-600">实时记录测试操作和结果</span>
+                <button onclick="clearLogs()" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+                    清除日志
+                </button>
+            </div>
+            <div id="testLogs" class="bg-gray-50 rounded p-4 h-64 overflow-y-auto text-sm font-mono">
+                <div class="text-gray-500">等待测试操作...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let duplicateClickCount = 0;
+        let loadingNotification = null;
+        let processingNotification = null;
+
+        function log(message, type = 'info') {
+            const logsContainer = document.getElementById('testLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = {
+                'success': 'text-green-600',
+                'error': 'text-red-600',
+                'warning': 'text-yellow-600',
+                'info': 'text-blue-600',
+                'debug': 'text-gray-600'
+            }[type] || 'text-gray-600';
+
+            const logEntry = document.createElement('div');
+            logEntry.className = colorClass;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        function updateStats() {
+            const stats = NotificationHelper.getStats();
+            const statsContainer = document.getElementById('notificationStats');
+
+            statsContainer.innerHTML = `
+                <div class="text-center p-3 bg-blue-50 rounded">
+                    <div class="font-semibold text-blue-600">${stats.activeNotifications}</div>
+                    <div class="text-gray-600">活动通知</div>
+                </div>
+                <div class="text-center p-3 bg-green-50 rounded">
+                    <div class="font-semibold text-green-600">${stats.queuedNotifications}</div>
+                    <div class="text-gray-600">队列通知</div>
+                </div>
+                <div class="text-center p-3 bg-yellow-50 rounded">
+                    <div class="font-semibold text-yellow-600">${stats.maxNotifications}</div>
+                    <div class="text-gray-600">最大限制</div>
+                </div>
+                <div class="text-center p-3 bg-purple-50 rounded">
+                    <div class="font-semibold text-purple-600">${stats.deduplicationRecords}</div>
+                    <div class="text-gray-600">去重记录</div>
+                </div>
+            `;
+
+            log(`统计信息更新: ${JSON.stringify(stats)}`, 'debug');
+        }
+
+        function testSuccess() {
+            NotificationHelper.success('操作成功完成！数据已保存到系统。', '测试成功');
+            log('创建成功通知', 'success');
+            setTimeout(updateStats, 100);
+        }
+
+        function testError() {
+            NotificationHelper.error('网络连接失败，请检查网络设置后重试。', '连接错误');
+            log('创建错误通知', 'error');
+            setTimeout(updateStats, 100);
+        }
+
+        function testWarning() {
+            NotificationHelper.warning('操作时间较长，请耐心等待处理完成。', '处理提醒');
+            log('创建警告通知', 'warning');
+            setTimeout(updateStats, 100);
+        }
+
+        function testInfo() {
+            NotificationHelper.info('系统将在5分钟后进行维护，请及时保存工作。', '系统通知');
+            log('创建信息通知', 'info');
+            setTimeout(updateStats, 100);
+        }
+
+        function testDuplicate() {
+            log('开始去重测试 - 快速创建5个相同通知', 'info');
+            for (let i = 1; i <= 5; i++) {
+                setTimeout(() => {
+                    NotificationHelper.info('这是一个重复测试通知', '去重测试');
+                    log(`创建第${i}个重复通知`, 'debug');
+                }, i * 100);
+            }
+            setTimeout(updateStats, 600);
+        }
+
+        function testQueue() {
+            log('开始队列测试 - 创建8个通知（超过默认限制5个）', 'info');
+            const types = ['success', 'error', 'warning', 'info'];
+
+            for (let i = 1; i <= 8; i++) {
+                setTimeout(() => {
+                    const type = types[i % types.length];
+                    NotificationHelper[type](`队列测试通知 #${i}`, '队列测试');
+                    log(`创建队列通知 #${i}`, 'debug');
+                }, i * 200);
+            }
+            setTimeout(updateStats, 2000);
+        }
+
+        function testLoading() {
+            if (loadingNotification) {
+                NotificationHelper.updateLoading('正在加载更多数据，请稍候...');
+                log('更新加载中通知', 'info');
+            } else {
+                loadingNotification = NotificationHelper.loading('正在加载数据，请稍候...');
+                log('创建加载中通知', 'info');
+            }
+            setTimeout(updateStats, 100);
+        }
+
+        function testProcessing() {
+            if (processingNotification) {
+                log('处理中通知已存在，将显示去重效果', 'warning');
+            } else {
+                processingNotification = NotificationHelper.processing('AI正在处理数据，请耐心等待...', 'AI处理');
+                log('创建处理中通知', 'info');
+            }
+            setTimeout(updateStats, 100);
+        }
+
+        function testSaving() {
+            NotificationHelper.saving('正在保存数据到服务器，请勿关闭页面...', '数据保存');
+            log('创建保存中通知', 'info');
+            setTimeout(updateStats, 100);
+        }
+
+        function testStatusUpdate() {
+            if (loadingNotification) {
+                NotificationHelper.updateLoading('加载进度：80% - 即将完成...');
+                log('更新加载状态', 'info');
+            }
+            if (processingNotification) {
+                log('处理中通知无法通过此方法更新（演示去重）', 'warning');
+            }
+            setTimeout(updateStats, 100);
+        }
+
+        function testClearStatus() {
+            NotificationHelper.clearLoading();
+            NotificationHelper.clearProcessing();
+            NotificationHelper.clearSaving();
+            loadingNotification = null;
+            processingNotification = null;
+            log('清除所有状态通知', 'info');
+            setTimeout(updateStats, 100);
+        }
+
+        function testBatchCreate() {
+            log('开始批量创建10个通知', 'info');
+            const messages = [
+                '系统初始化完成',
+                '数据库连接成功',
+                '用户认证通过',
+                '权限验证成功',
+                '数据加载完成',
+                '界面渲染完成',
+                '事件监听器已绑定',
+                '组件初始化完成',
+                '路由配置成功',
+                '应用启动完成'
+            ];
+
+            messages.forEach((message, index) => {
+                setTimeout(() => {
+                    NotificationHelper.success(message, '批量测试');
+                    log(`创建批量通知: ${message}`, 'debug');
+                }, index * 150);
+            });
+
+            setTimeout(updateStats, 2000);
+        }
+
+        function testClearByType() {
+            // 先创建一些错误通知
+            NotificationHelper.error('测试错误1', '清除测试');
+            NotificationHelper.error('测试错误2', '清除测试');
+            NotificationHelper.error('测试错误3', '清除测试');
+
+            setTimeout(() => {
+                NotificationHelper.clearByType('error');
+                log('清除所有错误通知', 'info');
+                setTimeout(updateStats, 100);
+            }, 1000);
+        }
+
+        function testClearAll() {
+            log('清除所有通知', 'warning');
+            NotificationHelper.clearAll();
+            loadingNotification = null;
+            processingNotification = null;
+            setTimeout(updateStats, 100);
+        }
+
+        function testNetworkError() {
+            NotificationHelper.networkError('无法连接到服务器，请检查网络连接', () => {
+                log('用户点击了重试按钮', 'info');
+                testSuccess();
+            });
+            log('创建网络错误通知（带重试按钮）', 'error');
+            setTimeout(updateStats, 100);
+        }
+
+        function testDatabaseError() {
+            NotificationHelper.databaseError('数据库查询超时，请联系管理员');
+            log('创建数据库错误通知', 'error');
+            setTimeout(updateStats, 100);
+        }
+
+        function testValidation() {
+            NotificationHelper.validationError('请填写完整的用户信息：姓名、邮箱、电话');
+            log('创建验证错误通知', 'warning');
+            setTimeout(updateStats, 100);
+        }
+
+        function updateConfig() {
+            const config = {
+                maxNotifications: parseInt(document.getElementById('maxNotifications').value),
+                deduplicationWindow: parseInt(document.getElementById('deduplicationWindow').value),
+                deduplicationEnabled: document.getElementById('deduplicationEnabled').value === 'true'
+            };
+
+            NotificationHelper.setConfig(config);
+            log(`配置更新: ${JSON.stringify(config)}`, 'info');
+            setTimeout(updateStats, 100);
+        }
+
+        function clearLogs() {
+            document.getElementById('testLogs').innerHTML = '<div class="text-gray-500">日志已清除，等待新的测试操作...</div>';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('通知系统测试页面已加载', 'success');
+            updateStats();
+
+            // 定期更新统计信息
+            setInterval(updateStats, 5000);
+        });
+
+        // 全局错误处理
+        window.addEventListener('error', (e) => {
+            log(`JavaScript错误: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

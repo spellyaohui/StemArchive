@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>根目录部署测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>根目录部署配置验证</h1>
+    <div id="results"></div>
+
+    <script src="config.js"></script>
+    <script src="js/path-helper.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(test, status, details = '') {
+            const div = document.createElement('div');
+            div.className = `result ${status}`;
+            div.innerHTML = `<strong>${test}:</strong> ${details}`;
+            results.appendChild(div);
+        }
+
+        function addTable(title, data) {
+            const section = document.createElement('div');
+            section.innerHTML = `<h3>${title}</h3>`;
+
+            const table = document.createElement('table');
+            const header = table.createTHead();
+            const headerRow = header.insertRow(0);
+
+            Object.keys(data[0]).forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            });
+
+            const tbody = table.createTBody();
+            data.forEach(item => {
+                const row = tbody.insertRow();
+                Object.values(item).forEach(value => {
+                    const cell = row.insertCell();
+                    cell.textContent = value;
+                });
+            });
+
+            section.appendChild(table);
+            results.appendChild(section);
+        }
+
+        // 测试配置加载
+        try {
+            addResult('CONFIG对象加载', window.CONFIG ? 'success' : 'error',
+                window.CONFIG ? '✅ 配置对象加载成功' : '❌ 配置对象加载失败');
+
+            if (window.CONFIG) {
+                addResult('PathHelper对象加载', window.PathHelper ? 'success' : 'error',
+                    window.PathHelper ? '✅ PathHelper加载成功' : '❌ PathHelper加载失败');
+
+                // 显示配置信息
+                const configData = [
+                    { 配置项: '环境检测', 值: window.CONFIG.app.environment },
+                    { 配置项: '基础路径', 值: window.CONFIG.app.basePath },
+                    { 配置项: '根目录部署', 值: window.CONFIG.app.isRootDeployment ? '是' : '否' },
+                    { 配置项: 'API基础URL', 值: window.CONFIG.api.baseURL },
+                    { 配置项: '当前域名', 值: window.location.hostname },
+                    { 配置项: '当前端口', 值: window.location.port },
+                    { 配置项: '当前路径', 值: window.location.pathname }
+                ];
+                addTable('当前配置信息', configData);
+
+                // 测试路径构建
+                if (window.PathHelper) {
+                    const pathTests = [
+                        { 测试路径: 'dashboard.html', 构建结果: window.PathHelper.buildPath('dashboard.html') },
+                        { 测试路径: 'js/app.js', 构建结果: window.PathHelper.buildPath('js/app.js') },
+                        { 测试路径: 'css/main.css', 构建结果: window.PathHelper.buildPath('css/main.css') }
+                    ];
+                    addTable('路径构建测试', pathTests);
+
+                    addResult('路径构建功能', 'success', '✅ 路径构建功能正常工作');
+                }
+
+                // 测试API路径构建
+                const apiTests = [
+                    { 测试端点: '/users', 完整URL: window.PathHelper.buildAPIPath('/users') },
+                    { 测试端点: '/auth/login', 完整URL: window.PathHelper.buildAPIPath('/auth/login') }
+                ];
+                addTable('API路径构建测试', apiTests);
+
+            }
+
+        } catch (error) {
+            addResult('配置验证', 'error', `❌ 配置验证失败: ${error.message}`);
+        }
+
+        // 部署建议
+        setTimeout(() => {
+            const suggestions = document.createElement('div');
+            suggestions.innerHTML = `
+                <h3>部署建议</h3>
+                <div class="result info">
+                    <strong>根目录部署：</strong><br>
+                    1. 将所有文件直接放在网站根目录<br>
+                    2. 确保 index.html 作为默认首页<br>
+                    3. 配置服务器支持单页应用路由（如需要）<br><br>
+
+                    <strong>子目录部署：</strong><br>
+                    1. 将所有文件放在子目录（如 /frontend）中<br>
+                    2. 系统会自动检测并调整路径<br>
+                    3. 无需修改任何代码
+                </div>
+            `;
+            results.appendChild(suggestions);
+        }, 100);
+    </script>
+</body>
+</html>
