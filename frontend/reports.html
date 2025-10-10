@@ -43,13 +43,27 @@
                             <span id="username">用户</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
                             <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i>个人资料
                             </a>
                             <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-cog mr-2"></i>系统设置
                             </a>
+                            <div id="adminMenuItems" class="hidden border-t border-gray-200">
+                                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    管理员工具
+                                </div>
+                                <button onclick="showDepartmentManagementModal()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-hospital mr-2"></i>科室管理
+                                </button>
+                                <button onclick="showTreatmentTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-chart-pie mr-2"></i>治疗类型维护
+                                </button>
+                                <button onclick="showDiseaseTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-notes-medical mr-2"></i>病种分布维护
+                                </button>
+                            </div>
                             <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-sign-out-alt mr-2"></i>退出登录
                             </button>
@@ -255,11 +269,69 @@
     <!-- 通知容器 -->
     <div id="notificationContainer"></div>
 
+    <!-- 科室管理弹出层 -->
+    <div id="departmentManagementModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-7xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">科室管理</h3>
+                <button type="button" onclick="closeDepartmentManagementModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="max-h-screen overflow-y-auto">
+                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/reports.js"></script>
+    <script>
+        // 显示科室管理弹出层
+        function showDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+        }
+
+        // 关闭科室管理弹出层
+        function closeDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.add('hidden');
+        }
+
+        // 点击弹出层外部关闭
+        document.getElementById('departmentManagementModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // ESC键关闭弹出层
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // 显示治疗类型维护弹出层
+        function showTreatmentTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=treatment-maintenance';
+        }
+
+        // 显示病种分布维护弹出层
+        function showDiseaseTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=disease-maintenance';
+        }
+    </script>
 </body>
 </html>
