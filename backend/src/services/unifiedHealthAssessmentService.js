@@ -88,7 +88,8 @@ class UnifiedHealthAssessmentService {
      * @returns {Promise<Object|null>} 现有记录或null
      */
     async findExistingAssessment(customerId, assessmentDate, medicalExamId = null, department = null) {
-        // 优先按体检ID和科室查找（唯一约束）
+        // 按体检ID和科室查找（唯一约束：MedicalExamID + Department）
+        // 每个科室的数据应该独立存储，不能复用其他科室的记录
         if (medicalExamId && department) {
             const query = `
                 SELECT TOP 1 * FROM HealthAssessments
@@ -105,22 +106,30 @@ class UnifiedHealthAssessmentService {
             if (result.length > 0) {
                 return result[0];
             }
+            
+            // 如果没找到匹配的体检ID+科室组合，返回null让调用方创建新记录
+            // 不再按客户ID+日期查找，避免复用其他科室的记录
+            return null;
         }
 
-        // 如果没有找到，按客户ID和日期查找
-        const query = `
-            SELECT TOP 1 * FROM HealthAssessments
-            WHERE CustomerID = @customerId AND AssessmentDate = @assessmentDate
-            ORDER BY CreatedAt DESC
-        `;
+        // 只有在没有提供科室时，才按客户ID和日期查找（向后兼容）
+        if (!department) {
+            const query = `
+                SELECT TOP 1 * FROM HealthAssessments
+                WHERE CustomerID = @customerId AND AssessmentDate = @assessmentDate
+                ORDER BY CreatedAt DESC
+            `;
 
-        const params = [
-            { name: 'customerId', value: customerId, type: sql.UniqueIdentifier },
-            { name: 'assessmentDate', value: assessmentDate, type: sql.Date }
-        ];
+            const params = [
+                { name: 'customerId', value: customerId, type: sql.UniqueIdentifier },
+                { name: 'assessmentDate', value: assessmentDate, type: sql.Date }
+            ];
 
-        const result = await executeQuery(query, params);
-        return result.length > 0 ? result[0] : null;
+            const result = await executeQuery(query, params);
+            return result.length > 0 ? result[0] : null;
+        }
+
+        return null;
     }
 
     /**

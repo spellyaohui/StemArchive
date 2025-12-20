@@ -131,11 +131,8 @@ class Dashboard {
     }
 
     container.innerHTML = schedules.map(schedule => {
-      const time = schedule.ScheduleDate ?
-        new Date(schedule.ScheduleDate).toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : '未知时间';
+      const parsedDate = Utils.parseDbDateTime(schedule.ScheduleDate);
+      const time = parsedDate ? Utils.formatDate(parsedDate, 'HH:mm') : '未知时间';
 
       return `
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">

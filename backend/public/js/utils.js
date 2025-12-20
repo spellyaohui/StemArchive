@@ -2,12 +2,49 @@
 
 // 工具类
 class Utils {
+    /**
+     * 解析数据库返回的时间字符串
+     * 数据库返回的时间是北京时间，没有时区标识
+     * @param {string|Date} dateString - 时间字符串或Date对象
+     * @returns {Date|null} - Date对象或null
+     */
+    static parseDbDateTime(dateString) {
+        if (!dateString) return null;
+        
+        if (dateString instanceof Date) {
+            return isNaN(dateString.getTime()) ? null : dateString;
+        }
+        
+        if (typeof dateString !== 'string') return null;
+        
+        try {
+            // 如果包含 'Z' 或 '+' 表示有时区信息，直接解析
+            if (dateString.includes('Z') || dateString.includes('+')) {
+                const date = new Date(dateString);
+                return isNaN(date.getTime()) ? null : date;
+            }
+            
+            // 没有时区信息，数据库返回的是本地时间（北京时间）
+            // 将空格替换为T，并移除毫秒后的多余数字
+            let normalizedStr = dateString.replace(' ', 'T');
+            // 处理毫秒格式（SQL Server返回7位小数）
+            normalizedStr = normalizedStr.replace(/\.(\d{3})\d*/, '.$1');
+            // 不添加Z，让JavaScript当作本地时间处理
+            const date = new Date(normalizedStr);
+            return isNaN(date.getTime()) ? null : date;
+        } catch (error) {
+            console.error('解析时间失败:', error);
+            return null;
+        }
+    }
+
     // 格式化日期
     static formatDate(date, format = 'YYYY-MM-DD') {
         if (!date) return '';
 
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return '';
+        // 使用统一的时间解析方法
+        const d = this.parseDbDateTime(date);
+        if (!d) return '';
 
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -25,6 +62,35 @@ class Utils {
             .replace('ss', seconds);
     }
 
+    /**
+     * 格式化日期时间为完整格式
+     * @param {string|Date} dateString - 时间字符串或Date对象
+     * @returns {string} - 格式化后的时间字符串 YYYY-MM-DD HH:mm:ss
+     */
+    static formatDateTime(dateString) {
+        return this.formatDate(dateString, 'YYYY-MM-DD HH:mm:ss');
+    }
+
+    /**
+     * 格式化日期时间为中文本地格式
+     * @param {string|Date} dateString - 时间字符串或Date对象
+     * @returns {string} - 格式化后的时间字符串
+     */
+    static formatDateTimeLocale(dateString) {
+        const d = this.parseDbDateTime(dateString);
+        if (!d) return '未知时间';
+        
+        return d.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+
     // 格式化数字
     static formatNumber(num, decimals = 0) {
         if (num === null || num === undefined) return '0';
@@ -36,7 +102,9 @@ class Utils {
         if (!birthDate) return '';
 
         const today = new Date();
-        const birth = new Date(birthDate);
+        const birth = this.parseDbDateTime(birthDate);
+        if (!birth) return '';
+        
         let age = today.getFullYear() - birth.getFullYear();
         const monthDiff = today.getMonth() - birth.getMonth();
 

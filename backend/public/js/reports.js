@@ -31,14 +31,19 @@ class ReportsManager {
       return;
     }
 
+    // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
+    let loadingNotification = null;
+    
     try {
-      const loadingNotification = NotificationHelper.loading('正在搜索检客...');
+      loadingNotification = NotificationHelper.loading('正在搜索检客...');
 
       // 获取所有检客数据，然后在客户端进行搜索过滤
       const response = await window.API.customer.getAll();
 
+      // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
+        loadingNotification = null;
       }
 
       if (response.status === 'Success') {
@@ -56,6 +61,13 @@ class ReportsManager {
       }
     } catch (error) {
       console.error('搜索检客失败:', error);
+      
+      // 关闭加载提示
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
+      
       NotificationHelper.error('搜索检客失败');
     }
   }
@@ -378,11 +390,24 @@ class ReportsManager {
     }
 
     try {
-      // 处理ISO时间字符串
       let date;
       if (typeof dateString === 'string') {
-        // 如果是UTC时间字符串（以Z结尾），转换为Date对象
-        date = new Date(dateString);
+        // 数据库返回的时间已经是北京时间，不需要时区转换
+        // 格式如: "2025-12-20 19:55:47.4100000" 或 "2025-12-20T19:55:47.410Z"
+        
+        // 如果包含 'Z' 或 '+' 表示有时区信息，直接解析
+        if (dateString.includes('Z') || dateString.includes('+')) {
+          date = new Date(dateString);
+        } else {
+          // 没有时区信息，数据库返回的是本地时间（北京时间）
+          // 直接解析为本地时间，不做时区转换
+          // 将空格替换为T，并移除毫秒后的多余数字
+          let normalizedStr = dateString.replace(' ', 'T');
+          // 处理毫秒格式（SQL Server返回7位小数）
+          normalizedStr = normalizedStr.replace(/\.(\d{3})\d*/, '.$1');
+          // 不添加Z，让JavaScript当作本地时间处理
+          date = new Date(normalizedStr);
+        }
       } else if (dateString instanceof Date) {
         date = dateString;
       } else {
@@ -394,7 +419,7 @@ class ReportsManager {
         return '未知日期';
       }
 
-      // 转换为本地时间
+      // 格式化输出
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -557,6 +582,9 @@ class ReportsManager {
 
   // 转换为PDF并下载
   async convertToPdf(id) {
+    // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
+    let loadingNotification = null;
+    
     try {
       const report = this.reports.find(r => r.id === id);
       console.log('转换PDF - 报告信息:', report);
@@ -565,7 +593,7 @@ class ReportsManager {
         return;
       }
 
-      const loadingNotification = NotificationHelper.loading('正在转换PDF...');
+      loadingNotification = NotificationHelper.loading('正在转换PDF...');
 
       let response;
 
@@ -580,8 +608,10 @@ class ReportsManager {
         console.log('转换PDF - 对比报告API响应:', response);
       }
 
+      // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
+        loadingNotification = null;
       }
 
       if (response.status === 'Success' && response.data.pdfData) {
@@ -610,6 +640,13 @@ class ReportsManager {
       }
     } catch (error) {
       console.error('转换PDF失败:', error);
+      
+      // 关闭加载提示
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
+      
       NotificationHelper.error('转换PDF失败，请稍后重试');
     }
   }
@@ -822,16 +859,37 @@ class ReportsManager {
 
   // 轮询健康评估状态
   pollHealthAssessmentStatus(reportId, aiNotification = null) {
+    // 保存通知引用到实例变量，确保不会丢失
+    const notification = aiNotification;
+    
     // 如果没有传入AI通知，创建一个处理中的通知
-    if (!aiNotification) {
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+    const activeNotification = notification || (
+      (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
         ? window.EnhancedNotificationHelper.aiProgress('健康评估正在生成中...', {
             title: 'AI 健康评估'
           })
-        : null;
-    }
+        : null
+    );
+
+    const self = this;
+    let pollCount = 0;
+    const maxPollCount = 200; // 最多轮询200次（约10分钟）
 
     const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      // 超过最大轮询次数，停止轮询
+      if (pollCount > maxPollCount) {
+        clearInterval(pollInterval);
+        if (activeNotification && activeNotification.complete) {
+          activeNotification.complete('处理超时，请刷新页面查看结果', false);
+        } else {
+          NotificationHelper.clearProcessing();
+          NotificationHelper.warning('轮询超时，请刷新页面查看生成结果', '处理超时');
+        }
+        return;
+      }
+
       try {
         const response = await window.API.service.get(`/reports/health-assessment/${reportId}`);
 
@@ -841,26 +899,32 @@ class ReportsManager {
           if (report.GenerationStatus === 'completed') {
             clearInterval(pollInterval);
             
-            if (aiNotification && aiNotification.complete) {
-              aiNotification.complete('健康评估生成完成！', true);
+            // 先关闭通知，再显示报告
+            if (activeNotification && activeNotification.complete) {
+              activeNotification.complete('健康评估生成完成！', true);
             } else {
               NotificationHelper.clearProcessing();
               NotificationHelper.success('健康评估生成完成', '生成成功');
             }
-            this.viewHealthAssessmentReport(reportId);
+            
+            // 延迟显示报告，确保通知已经开始关闭动画
+            setTimeout(() => {
+              self.viewHealthAssessmentReport(reportId);
+            }, 500);
+            
           } else if (report.GenerationStatus === 'failed') {
             clearInterval(pollInterval);
             
-            if (aiNotification && aiNotification.complete) {
-              aiNotification.complete('健康评估生成失败，请重试', false);
+            if (activeNotification && activeNotification.complete) {
+              activeNotification.complete('健康评估生成失败，请重试', false);
             } else {
               NotificationHelper.clearProcessing();
               NotificationHelper.error('健康评估生成失败，请重试', '生成失败');
             }
           } else {
             // 更新状态提示
-            if (aiNotification && aiNotification.updateStatus) {
-              aiNotification.updateStatus('AI 正在分析体检数据...');
+            if (activeNotification && activeNotification.updateStatus) {
+              activeNotification.updateStatus('AI 正在分析体检数据...');
             }
           }
         }
@@ -868,25 +932,14 @@ class ReportsManager {
         clearInterval(pollInterval);
         console.error('轮询健康评估状态失败:', error);
         
-        if (aiNotification && aiNotification.complete) {
-          aiNotification.complete('轮询状态失败，请刷新页面查看结果', false);
+        if (activeNotification && activeNotification.complete) {
+          activeNotification.complete('轮询状态失败，请刷新页面查看结果', false);
         } else {
           NotificationHelper.clearProcessing();
           NotificationHelper.error('轮询状态失败，请刷新页面查看结果', '轮询错误');
         }
       }
     }, 3000); // 每3秒轮询一次
-
-    // 10分钟后自动停止轮询（与AI通知超时时间一致）
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      if (aiNotification && aiNotification.complete) {
-        aiNotification.complete('处理超时，请刷新页面查看结果', false);
-      } else {
-        NotificationHelper.clearProcessing();
-        NotificationHelper.warning('轮询超时，请刷新页面查看生成结果', '处理超时');
-      }
-    }, 600000);
   }
 
   // 查看健康评估报告
@@ -999,7 +1052,7 @@ class ReportsManager {
                                         <i class="fas fa-calendar-alt text-purple-500 mr-2"></i>
                                         <div>
                                             <div class="text-xs text-gray-500">体检日期</div>
-                                            <div class="font-medium text-gray-800">${new Date(report.AssessmentDate).toLocaleDateString('zh-CN')}</div>
+                                            <div class="font-medium text-gray-800">${Utils.formatDate(report.AssessmentDate, 'YYYY-MM-DD')}</div>
                                         </div>
                                     </div>
 
@@ -1121,9 +1174,12 @@ class ReportsManager {
 
   // PDF下载功能
   async downloadPDF(reportId) {
+    // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
+    let loadingNotification = null;
+    
     try {
       // 显示转换提示
-      const loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
 
       // 调用后端PDF转换API
       const response = await window.API.service.post(`/reports/health-assessment/${reportId}/convert-pdf`);
@@ -1131,6 +1187,7 @@ class ReportsManager {
       // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
+        loadingNotification = null;
       }
 
       if (response.status === 'Success' && response.data) {
@@ -1181,11 +1238,11 @@ class ReportsManager {
 
       // 根据错误类型显示不同的提示
       let errorMessage = 'PDF转换失败，请稍后重试';
-      if (error.message.includes('503')) {
+      if (error.message && error.message.includes('503')) {
         errorMessage = 'PDF转换服务不可用，请稍后重试';
-      } else if (error.message.includes('timeout')) {
+      } else if (error.message && error.message.includes('timeout')) {
         errorMessage = 'PDF转换超时，请稍后重试';
-      } else if (error.message.includes('network')) {
+      } else if (error.message && error.message.includes('network')) {
         errorMessage = '网络连接失败，请检查网络设置';
       }
 
@@ -1341,7 +1398,7 @@ class ReportsManager {
 
   // 生成报告内容
   generateReportContent(type, customerName) {
-    const currentDate = new Date().toLocaleDateString('zh-CN');
+    const currentDate = Utils.formatDate(new Date(), 'YYYY-MM-DD');
 
     switch (type) {
     case 'comparison':
@@ -1929,7 +1986,7 @@ class ReportsManager {
             exams.map(exam => {
               // 计算该体检ID包含的科室数量
               const departmentCount = exam.DepartmentCount || 1;
-              const examDate = exam.ExamDate ? new Date(exam.ExamDate).toLocaleDateString('zh-CN') : '未知日期';
+              const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
               const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
               return `<option value="${medicalExamId}">
                     ${medicalExamId} - ${examDate} (${departmentCount}个科室)
@@ -2026,7 +2083,7 @@ class ReportsManager {
             exams.map(exam => {
               // 计算该体检ID包含的科室数量
               const departmentCount = exam.DepartmentCount || 1;
-              const examDate = exam.ExamDate ? new Date(exam.ExamDate).toLocaleDateString('zh-CN') : '未知日期';
+              const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
               const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
               return `<option value="${medicalExamId}">
                     ${medicalExamId} - ${examDate} (${departmentCount}个科室)
@@ -2128,14 +2185,19 @@ class ReportsManager {
       return;
     }
 
+    // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
+    let loadingNotification = null;
+    
     try {
-      const loadingNotification = NotificationHelper.loading('正在搜索体检数据...');
+      loadingNotification = NotificationHelper.loading('正在搜索体检数据...');
 
       // 获取体检详情数据
       const haResponse = await window.API.service.get(`/reports/exams?customerId=${this.selectedCustomer.id}&startDate=${startDate}&endDate=${endDate}`);
 
+      // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
+        loadingNotification = null;
       }
 
       const exams = [];
@@ -2168,6 +2230,13 @@ class ReportsManager {
 
     } catch (error) {
       console.error('搜索对比体检数据失败:', error);
+      
+      // 关闭加载提示
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
+      
       NotificationHelper.error('搜索体检数据失败');
     }
   }
@@ -2671,11 +2740,15 @@ class ReportsManager {
 
   // 下载对比报告PDF
   async downloadComparisonPDF(reportId) {
+    // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
+    let loadingNotification = null;
+    
     try {
-      let loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
 
       const response = await window.API.service.post(`/reports/comparison/${reportId}/convert-pdf`);
 
+      // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
         loadingNotification = null;
@@ -2710,13 +2783,11 @@ class ReportsManager {
     } catch (error) {
       console.error('下载PDF失败:', error);
 
-      // 关闭loading通知
-      const loadingNotifications = document.querySelectorAll('.notification-loading');
-      loadingNotifications.forEach(notification => {
-        if (notification.remove) {
-          notification.remove();
-        }
-      });
+      // 关闭加载提示
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
 
       NotificationHelper.error('PDF转换失败，请稍后重试');
     }

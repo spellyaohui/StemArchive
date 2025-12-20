@@ -588,7 +588,7 @@ class CustomersManager {
                                 </div>
                                 <div>
                                     <span class="text-gray-600">创建时间:</span>
-                                    <span class="font-medium ml-2">${customer?.CreatedAt ? new Date(customer.CreatedAt).toLocaleString('zh-CN') : 'N/A'}</span>
+                                    <span class="font-medium ml-2">${customer?.CreatedAt ? Utils.formatDateTime(customer.CreatedAt) : 'N/A'}</span>
                                 </div>
                             </div>
                         </div>

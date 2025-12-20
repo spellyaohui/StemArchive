@@ -1481,7 +1481,10 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
   formatDateTimeLocal(dateString) {
     if (!dateString) return '';
     try {
-      const date = new Date(dateString);
+      // 使用统一的时间解析方法
+      const date = Utils.parseDbDateTime(dateString);
+      if (!date) return '';
+      
       // 获取本地时区的日期时间并格式化为YYYY-MM-DDTHH:MM
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1499,7 +1502,10 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
   formatDateForInput(dateString) {
     if (!dateString) return '';
     try {
-      const date = new Date(dateString);
+      // 使用统一的时间解析方法
+      const date = Utils.parseDbDateTime(dateString);
+      if (!date) return '';
+      
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -1644,13 +1650,11 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
     }
 
     const schedulesHtml = schedules.map(schedule => {
-      const scheduleDate = schedule.ScheduleDate ?
-        new Date(schedule.ScheduleDate).toLocaleDateString('zh-CN') : '未知日期';
-      const scheduleTime = schedule.ScheduleDate ?
-        new Date(schedule.ScheduleDate).toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : '';
+      const parsedDate = Utils.parseDbDateTime(schedule.ScheduleDate);
+      const scheduleDate = parsedDate ?
+        Utils.formatDate(parsedDate, 'YYYY-MM-DD') : '未知日期';
+      const scheduleTime = parsedDate ?
+        Utils.formatDate(parsedDate, 'HH:mm') : '';
 
       return `
                 <tr class="border-b hover:bg-gray-50">

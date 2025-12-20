@@ -263,7 +263,7 @@ class SettingsManager {
                     <div>
                         <p class="font-medium text-gray-900">${backup.filename}</p>
                         <p class="text-sm text-gray-600">
-                            ${new Date(backup.created_at).toLocaleString('zh-CN')} (${backup.file_size})
+                            ${Utils.formatDateTime(backup.created_at)} (${backup.file_size})
                         </p>
                     </div>
                 </div>
@@ -311,7 +311,7 @@ class SettingsManager {
     }
 
     container.innerHTML = this.logs.map(log => {
-      const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+      const timestamp = Utils.formatDateTime(log.timestamp);
       const levelClass = this.getLogLevelClass(log.level);
       return `[${timestamp}] [${levelClass}] ${log.message}`;
     }).join('\n');
@@ -536,7 +536,7 @@ class SettingsManager {
                 <i class="fas fa-file-archive text-blue-500"></i>
                 <div>
                     <p class="text-sm font-medium text-gray-900">${backupInfo.filename}</p>
-                    <p class="text-xs text-gray-500">${backupInfo.size} • ${new Date(backupInfo.timestamp).toLocaleString('zh-CN')}</p>
+                    <p class="text-xs text-gray-500">${backupInfo.size} • ${Utils.formatDateTime(backupInfo.timestamp)}</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -825,7 +825,7 @@ class SettingsManager {
     }
 
     const logsText = this.logs.map(log => {
-      const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+      const timestamp = Utils.formatDateTime(log.timestamp);
       const level = this.formatLogLevel(log.level).padEnd(6);
       const message = log.message;
       const user = log.user.padEnd(10);
@@ -867,7 +867,7 @@ class SettingsManager {
     ];
 
     const logsText = mockLogs.map(log => {
-      const timestamp = new Date(log.timestamp).toLocaleString('zh-CN');
+      const timestamp = Utils.formatDateTime(log.timestamp);
       const level = this.formatLogLevel(log.level).padEnd(6);
       const message = log.message;
       const user = log.user.padEnd(10);
