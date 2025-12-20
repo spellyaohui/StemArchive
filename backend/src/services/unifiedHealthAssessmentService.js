@@ -6,6 +6,7 @@
 
 const { executeQuery, sql } = require('../../config/database');
 const examinationDateService = require('./examinationDateService');
+const crypto = require('crypto');
 
 class UnifiedHealthAssessmentService {
     /**
@@ -43,8 +44,8 @@ class UnifiedHealthAssessmentService {
                 console.log(`🆕 生成新体检ID: ${finalMedicalExamId}, 日期: ${assessmentDate}`);
             }
 
-            // 检查是否已存在相同客户、相同日期的健康评估记录
-            const existingRecord = await this.findExistingAssessment(customerId, assessmentDate);
+            // 检查是否已存在相同体检ID和科室的健康评估记录
+            const existingRecord = await this.findExistingAssessment(customerId, assessmentDate, finalMedicalExamId, department);
 
             if (existingRecord) {
                 console.log(`📋 找到现有健康评估记录: ID=${existingRecord.ID}, 体检ID=${existingRecord.MedicalExamID}`);
@@ -82,9 +83,31 @@ class UnifiedHealthAssessmentService {
      * 查找现有的健康评估记录
      * @param {string} customerId - 客户ID
      * @param {string} assessmentDate - 评估日期
+     * @param {string} medicalExamId - 体检ID（可选）
+     * @param {string} department - 科室（可选）
      * @returns {Promise<Object|null>} 现有记录或null
      */
-    async findExistingAssessment(customerId, assessmentDate) {
+    async findExistingAssessment(customerId, assessmentDate, medicalExamId = null, department = null) {
+        // 优先按体检ID和科室查找（唯一约束）
+        if (medicalExamId && department) {
+            const query = `
+                SELECT TOP 1 * FROM HealthAssessments
+                WHERE MedicalExamID = @medicalExamId AND Department = @department
+                ORDER BY CreatedAt DESC
+            `;
+
+            const params = [
+                { name: 'medicalExamId', value: medicalExamId, type: sql.NVarChar(100) },
+                { name: 'department', value: department, type: sql.NVarChar(100) }
+            ];
+
+            const result = await executeQuery(query, params);
+            if (result.length > 0) {
+                return result[0];
+            }
+        }
+
+        // 如果没有找到，按客户ID和日期查找
         const query = `
             SELECT TOP 1 * FROM HealthAssessments
             WHERE CustomerID = @customerId AND AssessmentDate = @assessmentDate
@@ -131,23 +154,22 @@ class UnifiedHealthAssessmentService {
      * @returns {Promise<Object>} 新创建的记录
      */
     async createNewAssessment(customerId, medicalExamId, assessmentDate, department, doctor, createdBy) {
-        const query = `
-            DECLARE @NewID uniqueidentifier;
-            SET @NewID = NEWID();
-
+        // 使用 crypto 生成 UUID
+        const newId = crypto.randomUUID();
+        
+        const insertQuery = `
             INSERT INTO HealthAssessments (
                 ID, CustomerID, AssessmentDate, Department, Doctor,
                 MedicalExamID, Status, CreatedBy, CreatedAt, UpdatedAt
             )
             VALUES (
-                @NewID, @customerId, @assessmentDate, @department, @doctor,
+                @newId, @customerId, @assessmentDate, @department, @doctor,
                 @medicalExamId, 'Active', @createdBy, GETDATE(), GETDATE()
-            );
-
-            SELECT * FROM HealthAssessments WHERE ID = @NewID;
+            )
         `;
 
-        const params = [
+        const insertParams = [
+            { name: 'newId', value: newId, type: sql.UniqueIdentifier },
             { name: 'customerId', value: customerId, type: sql.UniqueIdentifier },
             { name: 'medicalExamId', value: medicalExamId, type: sql.NVarChar(100) },
             { name: 'assessmentDate', value: assessmentDate, type: sql.Date },
@@ -156,7 +178,13 @@ class UnifiedHealthAssessmentService {
             { name: 'createdBy', value: createdBy, type: sql.NVarChar(100) }
         ];
 
-        const result = await executeQuery(query, params);
+        await executeQuery(insertQuery, insertParams);
+
+        // 查询刚插入的记录
+        const selectQuery = `SELECT * FROM HealthAssessments WHERE ID = @newId`;
+        const selectParams = [{ name: 'newId', value: newId, type: sql.UniqueIdentifier }];
+        
+        const result = await executeQuery(selectQuery, selectParams);
         return result[0];
     }
 

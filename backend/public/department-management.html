@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科室管理</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <style>
+        /* 弹出层专用样式 */
+        body {
+            background: white;
+            margin: 0;
+            padding: 0;
+            overflow: auto;
+        }
+        .popup-container {
+            min-height: 100vh;
+            padding: 16px;
+        }
+        /* 隐藏一些不必要的页面元素 */
+        .mobile-only,
+        .print-only {
+            display: none !important;
+        }
+        /* 调整容器宽度以适应弹出层 */
+        .container {
+            max-width: 100%;
+            padding: 0;
+        }
+        /* 确保主内容区域有合适的边距 */
+        main {
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="popup-container">
+        <!-- 主内容区域 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">科室管理</h2>
+                <p class="text-gray-600">维护医院科室信息，管理检验科、常规科室和影像科室</p>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">总科室数</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalDepartments">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-hospital text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">检验科</p>
+                            <p class="text-2xl font-bold text-yellow-600" id="labDepartments">0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-vial text-yellow-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">常规科室</p>
+                            <p class="text-2xl font-bold text-green-600" id="generalDepartments">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-stethoscope text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">影像科室</p>
+                            <p class="text-2xl font-bold text-purple-600" id="imagingDepartments">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-x-ray text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">仪器室</p>
+                            <p class="text-2xl font-bold text-blue-600" id="instrumentDepartments">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-microscope text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作工具栏 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                        <select id="typeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">全部类型</option>
+                            <option value="laboratory">检验科</option>
+                            <option value="general">常规科室</option>
+                            <option value="imaging">影像科室</option>
+                            <option value="instrument">仪器室</option>
+                        </select>
+                        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">全部状态</option>
+                            <option value="active">启用</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="搜索科室名称或编码"
+                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="refreshBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>刷新
+                        </button>
+                        <button id="addDepartmentBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>新增科室
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 科室列表 -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科室编码</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科室名称</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科室类型</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">排序</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="departmentTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- 科室数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noDataMessage" class="hidden p-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>暂无科室数据</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 模态框容器 -->
+        <div id="modalContainer"></div>
+        <!-- 通知容器 -->
+        <div id="notificationContainer"></div>
+
+        <!-- 科室编辑模态框 -->
+        <div id="departmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">新增科室</h3>
+                    <button type="button" onclick="closeDepartmentModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="departmentForm" class="space-y-4">
+                    <input type="hidden" id="departmentId">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">科室编码 <span class="text-red-500">*</span></label>
+                            <input type="text" id="departmentCode" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="如: LAB_001">
+                            <p class="text-xs text-gray-500 mt-1">编码不可重复，建议使用类型缩写+数字</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">科室名称 <span class="text-red-500">*</span></label>
+                            <input type="text" id="departmentName" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="如: 检验科">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">科室类型 <span class="text-red-500">*</span></label>
+                            <select id="departmentType" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">请选择类型</option>
+                                <option value="laboratory">检验科</option>
+                                <option value="general">常规科室</option>
+                                <option value="imaging">影像科室</option>
+                                <option value="instrument">仪器室</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">排序</label>
+                            <input type="number" id="departmentSort" min="0"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="数字越小排序越靠前">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">科室描述</label>
+                        <textarea id="departmentDescription" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="请输入科室描述信息..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">状态</label>
+                        <select id="departmentStatus"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="active">启用</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="closeDepartmentModal()"
+                                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>取消
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/department-management.js"></script>
+</body>
+</html>

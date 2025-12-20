@@ -40,7 +40,7 @@
 - **原生JavaScript**: 无框架依赖，轻量高效
 
 ### 系统特点
-- **前后端分离**: 独立部署，便于扩展
+- **前后端合并部署**: 单一端口服务，简化部署和运维
 - **RESTful API**: 标准化接口设计
 - **响应式设计**: 适配各种屏幕尺寸
 - **模块化架构**: 代码结构清晰，易于维护
@@ -82,24 +82,47 @@ DB_DATABASE=HealthRecordSystem
 ```bash
 npm run dev
 ```
-后端服务将在 http://localhost:3000 启动
+后端服务将在 http://localhost:5000 启动
 
-#### 5. 启动前端服务
+#### 5. 构建并启动统一服务（推荐）
 ```bash
-cd ../frontend
-# 使用任意静态文件服务器，例如：
+# 构建前端（复制前端文件到 backend/public）
+npm run build
+
+# 启动统一服务器
+npm start
+```
+统一服务将在 http://localhost:5000 启动（端口由 .env 中 PORT 配置），同时提供 API 和前端页面服务。
+
+#### 5b. 开发模式（前后端分离）
+如果需要前后端分离开发：
+```bash
+# 终端1：启动后端
+cd backend
+npm run dev
+
+# 终端2：启动前端开发服务器
+cd frontend
 npx http-server -p 8080
 ```
-前端将在 http://localhost:8080 启动
+- 后端 API: http://localhost:3000/api
+- 前端页面: http://localhost:8080
 
 #### 6. 访问系统
-打开浏览器访问 http://localhost:8080
+- 统一部署模式: http://localhost:5000
+- 开发模式: http://localhost:8080
 
 ## 项目结构
 
 ```
-健康管理系统/
+干细胞档案管理系统/
 ├── backend/                 # 后端代码
+│   ├── public/             # 前端静态文件（构建后生成）
+│   │   ├── css/            # 样式文件
+│   │   ├── js/             # JavaScript文件
+│   │   ├── assets/         # 静态资源
+│   │   ├── webfonts/       # 字体文件
+│   │   └── *.html          # HTML页面
 │   ├── src/
 │   │   ├── models/         # 数据模型
 │   │   ├── controllers/    # 控制器
@@ -107,15 +130,18 @@ npx http-server -p 8080
 │   │   ├── middleware/     # 中间件
 │   │   ├── services/       # 业务服务
 │   │   └── utils/          # 工具函数
+│   ├── scripts/            # 构建脚本
+│   │   └── build-frontend.js  # 前端构建脚本
 │   ├── config/             # 配置文件
 │   ├── database/           # 数据库脚本
 │   └── tests/              # 测试文件
-├── frontend/               # 前端代码
+├── frontend/               # 前端源代码
 │   ├── css/                # 样式文件
 │   ├── js/                 # JavaScript文件
 │   ├── assets/             # 静态资源
-│   └── index.html          # 主页面
-└── 数据/                   # 示例数据
+│   └── *.html              # HTML页面
+├── database/               # 数据库初始化脚本
+└── .kiro/                  # Kiro配置文件
 ```
 
 ## 数据库设计
@@ -176,14 +202,34 @@ npx http-server -p 8080
 ## 部署说明
 
 ### 开发环境
-- 后端: `npm run dev` (nodemon热重载)
-- 前端: `npx http-server -p 8080`
-- 数据库: 本地SQL Server
+```bash
+# 方式1：统一服务（推荐）
+cd backend
+npm run build    # 构建前端
+npm run dev      # 启动开发服务器（带热重载）
+
+# 方式2：前后端分离开发
+# 终端1
+cd backend && npm run dev
+# 终端2
+cd frontend && npx http-server -p 8080
+```
 
 ### 生产环境
-- 后端: PM2进程管理
-- 前端: Nginx静态文件服务
-- 数据库: SQL Server生产配置
+```bash
+cd backend
+npm run build    # 构建前端
+npm start        # 或使用 PM2: pm2 start server.js
+```
+
+### 常用命令
+| 命令 | 说明 |
+|------|------|
+| `npm run build` | 构建前端（复制到 public 目录） |
+| `npm run dev` | 开发模式启动（热重载） |
+| `npm start` | 生产模式启动 |
+| `npm run prod` | 构建并启动生产服务 |
+| `npm test` | 运行测试 |
 
 ## 系统使用
 

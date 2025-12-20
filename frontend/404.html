@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面未找到 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .error-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .btn-home {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-back {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        @media (max-width: 640px) {
+            .error-code {
+                font-size: 5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="error-container max-w-lg w-full rounded-2xl shadow-2xl p-8 text-center">
+            <!-- 图标 -->
+            <div class="floating inline-block mb-6">
+                <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                    <i class="fas fa-search text-white text-4xl"></i>
+                </div>
+            </div>
+
+            <!-- 错误代码 -->
+            <h1 class="error-code mb-4">404</h1>
+
+            <!-- 错误信息 -->
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">页面未找到</h2>
+            <p class="text-gray-600 mb-8">
+                抱歉，您访问的页面不存在或已被移除。<br>
+                请检查网址是否正确，或返回首页继续浏览。
+            </p>
+
+            <!-- 操作按钮 -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/login.html" class="btn-home text-white font-semibold py-3 px-6 rounded-lg shadow-md flex items-center justify-center">
+                    <i class="fas fa-home mr-2"></i>
+                    返回首页
+                </a>
+                <button onclick="history.back()" class="btn-back font-semibold py-3 px-6 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    返回上页
+                </button>
+            </div>
+
+            <!-- 帮助信息 -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <p class="text-sm text-gray-500 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    如果问题持续存在，请联系系统管理员
+                </p>
+                <p class="text-xs text-gray-400">
+                    错误时间: <span id="errorTime"></span>
+                </p>
+            </div>
+
+            <!-- 底部信息 -->
+            <div class="mt-6">
+                <p class="text-xs text-gray-500">
+                    © 2025 干细胞治疗档案管理系统. 保留所有权利.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 显示错误时间
+        document.getElementById('errorTime').textContent = new Date().toLocaleString('zh-CN');
+    </script>
+</body>
+</html>

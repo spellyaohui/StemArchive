@@ -219,7 +219,7 @@ router.post('/',
             if (data || summary) {
                 const updateQuery = `
                     UPDATE HealthAssessments
-                    SET AssessmentData = ISNULL(AssessmentData, '{}') + COALESCE(@data, '{}'),
+                    SET AssessmentData = @data,
                         Summary = COALESCE(@summary, Summary),
                         UpdatedAt = GETDATE(),
                         UpdatedBy = @updatedBy

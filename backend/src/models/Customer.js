@@ -152,7 +152,8 @@ class Customer {
       remarks
     } = updateData;
 
-    const query = `
+    // 先执行更新
+    const updateQuery = `
       UPDATE Customers SET
         Name = @name,
         Gender = @gender,
@@ -166,9 +167,7 @@ class Customer {
         Address = @address,
         Remarks = @remarks,
         UpdatedAt = GETDATE()
-      WHERE ID = @id;
-
-      SELECT * FROM Customers WHERE ID = @id;
+      WHERE ID = @id
     `;
 
     const params = [
@@ -185,7 +184,13 @@ class Customer {
       { name: 'remarks', value: remarks, type: sql.NVarChar }
     ];
 
-    const result = await executeQuery(query, params);
+    await executeQuery(updateQuery, params);
+
+    // 再查询更新后的数据
+    const selectQuery = `SELECT * FROM Customers WHERE ID = @id`;
+    const selectParams = [{ name: 'id', value: id, type: sql.UniqueIdentifier }];
+    const result = await executeQuery(selectQuery, selectParams);
+    
     return result[0];
   }
 

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>干细胞管理 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+    <style>
+        .patient-row.selected {
+            background-color: #eff6ff !important;
+            border-left: 4px solid #3b82f6;
+        }
+        .patient-row:hover {
+            background-color: #f9fafb;
+        }
+        .patient-row.selected:hover {
+            background-color: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-dna text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">干细胞治疗档案管理系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="dashboard.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>仪表板
+                    </a>
+                    <a href="customers.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-users mr-2"></i>检客管理
+                    </a>
+                    <a href="health-data.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-heartbeat mr-2"></i>健康数据
+                    </a>
+                    <a href="stem-cell.html" class="nav-link hover:text-blue-200 transition-colors text-blue-200">
+                        <i class="fas fa-microscope mr-2"></i>干细胞管理
+                    </a>
+                    <a href="reports.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-file-medical mr-2"></i>报告查看
+                    </a>
+                    <a href="statistics.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>统计分析
+                    </a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:text-blue-200 transition-colors">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="username">用户</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>个人资料
+                            </a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>系统设置
+                            </a>
+                            <div id="adminMenuItems" class="hidden border-t border-gray-200">
+                                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    管理员工具
+                                </div>
+                                <button onclick="showDepartmentManagementModal()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-hospital mr-2"></i>科室管理
+                                </button>
+                                <button onclick="stemCellManager.showTreatmentTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-chart-pie mr-2"></i>治疗类型维护
+                                </button>
+                                <button onclick="stemCellManager.showDiseaseTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-notes-medical mr-2"></i>病种分布维护
+                                </button>
+                            </div>
+                            <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">干细胞治疗管理</h2>
+            <p class="text-gray-600">管理干细胞患者档案、治疗方案和输注排期</p>
+        </div>
+
+        <!-- 治疗统计概览 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">治疗类型统计</h3>
+                <div id="treatmentStats" class="space-y-2">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">回输次数分布</h3>
+                <div id="infusionCountStats" class="space-y-2">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">病种分布</h3>
+                <div id="diseaseStats" class="space-y-2">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                    <button id="createStemCellPatientBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>创建患者档案
+                    </button>
+                    <button id="scheduleInfusionBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-calendar-plus mr-2"></i>安排输注
+                    </button>
+                    <button id="manageSchedulesBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-calendar-check mr-2"></i>排期管理
+                    </button>
+                    <button id="treatmentEffectivenessBtn" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>治疗效果评估
+                    </button>
+                </div>
+                <div class="flex space-x-2">
+                    <input type="date" id="scheduleDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">所有状态</option>
+                        <option value="Active">治疗中</option>
+                        <option value="In Progress">进行中</option>
+                        <option value="Completed">已完成</option>
+                        <option value="Suspended">暂停</option>
+                        <option value="Inactive">未激活</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 患者档案列表 -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">患者编号</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">主要诊断</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">治疗方案</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">回输次数</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">下次排期</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stemCellPatientsList" class="bg-white divide-y divide-gray-200">
+                        <!-- 动态加载 -->
+                    </tbody>
+                </table>
+
+            <!-- 分页控件 -->
+            <div class="bg-gray-50 px-6 py-3 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    显示 <span id="patientsStart">1</span> 到 <span id="patientsEnd">10</span> 条，共 <span id="patientsTotal">0</span> 条记录
+                </div>
+                <div class="flex space-x-2" id="patientsPagination"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 干细胞治疗档案管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- 科室管理弹出层 -->
+    <div id="departmentManagementModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-7xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">科室管理</h3>
+                <button type="button" onclick="closeDepartmentManagementModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="max-h-screen overflow-y-auto">
+                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 治疗效果评估模态框 -->
+    <div id="treatmentEffectivenessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">治疗效果评估管理</h3>
+                <button type="button" onclick="closeTreatmentEffectivenessModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="max-h-96 overflow-y-auto">
+                <!-- 患者信息 -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">选择患者</label>
+                    <select id="effectivenessPatientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">请选择患者</option>
+                    </select>
+                </div>
+
+                <!-- 评估列表 -->
+                <div id="effectivenessList" class="space-y-4">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeTreatmentEffectivenessModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>关闭
+                </button>
+                <button type="button" onclick="addNewEffectiveness()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>新建评估
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 治疗效果评估编辑模态框 -->
+    <div id="editEffectivenessModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">治疗效果评估</h3>
+                <button type="button" onclick="closeEditEffectivenessModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="effectivenessForm" class="space-y-4">
+                <input type="hidden" id="effectivenessId">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">评估日期</label>
+                        <input type="date" id="assessmentDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">评估时期</label>
+                        <select id="assessmentPeriod" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">请选择评估时期</option>
+                            <option value="治疗前">治疗前</option>
+                            <option value="治疗后1周">治疗后1周</option>
+                            <option value="治疗后1个月">治疗后1个月</option>
+                            <option value="治疗后3个月">治疗后3个月</option>
+                            <option value="治疗后6个月">治疗后6个月</option>
+                            <option value="治疗后1年">治疗后1年</option>
+                            <option value="长期随访">长期随访</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">治疗效果类型 <span class="text-red-500">*</span></label>
+                    <select id="effectivenessType" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">请选择治疗效果类型</option>
+                        <option value="显著改善">显著改善</option>
+                        <option value="改善">改善</option>
+                        <option value="稳定">稳定</option>
+                        <option value="恶化">恶化</option>
+                        <option value="无效">无效</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">总体效果评分 (0-100)</label>
+                        <input type="number" id="overallEffectiveness" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">症状改善评分 (0-100)</label>
+                        <input type="number" id="symptomImprovement" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">生活质量改善评分 (0-100)</label>
+                        <input type="number" id="qualityOfLifeImprovement" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">患者满意度 (1-10)</label>
+                    <input type="number" id="patientSatisfaction" min="1" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">医生评估</label>
+                    <textarea id="doctorAssessment" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">患者反馈</label>
+                    <textarea id="patientFeedback" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">不良反应</label>
+                    <textarea id="sideEffects" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">治疗方案调整</label>
+                    <textarea id="treatmentAdjustment" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">下次评估日期</label>
+                    <input type="date" id="nextAssessmentDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </form>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeEditEffectivenessModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>取消
+                </button>
+                <button type="button" onclick="saveEffectiveness()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>保存评估
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/stem-cell.js"></script>
+    <script>
+        // 显示科室管理弹出层
+        function showDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+        }
+
+        // 关闭科室管理弹出层
+        function closeDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.add('hidden');
+        }
+
+        // 点击弹出层外部关闭
+        document.getElementById('departmentManagementModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // ESC键关闭弹出层
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // 页面加载时检查URL参数
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const showParam = urlParams.get('show');
+
+            if (showParam === 'treatment-maintenance' && typeof stemCellManager !== 'undefined') {
+                setTimeout(() => {
+                    stemCellManager.showTreatmentTypeMaintenance();
+                }, 500);
+            } else if (showParam === 'disease-maintenance' && typeof stemCellManager !== 'undefined') {
+                setTimeout(() => {
+                    stemCellManager.showDiseaseTypeMaintenance();
+                }, 500);
+            }
+        });
+
+        // 治疗效果评估相关的全局函数
+        function closeTreatmentEffectivenessModal() {
+            document.getElementById('treatmentEffectivenessModal').classList.add('hidden');
+        }
+
+        function closeEditEffectivenessModal() {
+            document.getElementById('editEffectivenessModal').classList.add('hidden');
+        }
+
+        function addNewEffectiveness() {
+            const patientSelect = document.getElementById('effectivenessPatientSelect');
+            if (!patientSelect.value) {
+                showNotification('请先选择患者', 'warning');
+                return;
+            }
+
+            // 获取患者信息
+            const patientId = patientSelect.value;
+            const patientText = patientSelect.options[patientSelect.selectedIndex].text;
+
+            // 存储当前选中的患者ID和客户ID（在选择患者时已设置）
+            window.currentEffectivenessPatientId = patientId;
+
+            // 显示编辑模态框
+            if (typeof stemCellManager !== 'undefined') {
+                stemCellManager.showEditEffectivenessModal(null);
+            }
+        }
+
+        async function saveEffectiveness() {
+            const form = document.getElementById('effectivenessForm');
+            const formData = new FormData(form);
+
+            // 获取表单数据
+            const data = {
+                customerId: window.currentEffectivenessCustomerId, // 从模态框加载时获取的客户ID
+                patientId: window.currentEffectivenessPatientId || document.getElementById('effectivenessPatientSelect').value,
+                assessmentDate: document.getElementById('assessmentDate').value,
+                assessmentPeriod: document.getElementById('assessmentPeriod').value,
+                effectivenessType: document.getElementById('effectivenessType').value,
+                overallEffectiveness: document.getElementById('overallEffectiveness').value || null,
+                symptomImprovement: document.getElementById('symptomImprovement').value || null,
+                qualityOfLifeImprovement: document.getElementById('qualityOfLifeImprovement').value || null,
+                patientSatisfaction: document.getElementById('patientSatisfaction').value || null,
+                doctorAssessment: document.getElementById('doctorAssessment').value || null,
+                patientFeedback: document.getElementById('patientFeedback').value || null,
+                sideEffects: document.getElementById('sideEffects').value || null,
+                treatmentAdjustment: document.getElementById('treatmentAdjustment').value || null,
+                nextAssessmentDate: document.getElementById('nextAssessmentDate').value || null,
+                doctorId: 'current_user' // 实际应用中应该是当前登录用户的ID
+            };
+
+            // 验证必填字段
+            if (!data.patientId || !data.assessmentDate || !data.assessmentPeriod || !data.effectivenessType) {
+                showNotification('请填写所有必填字段', 'warning');
+                return;
+            }
+
+            try {
+                let result;
+                const effectivenessId = document.getElementById('effectivenessId').value;
+
+                if (effectivenessId) {
+                    // 更新现有记录
+                    result = await window.API.treatmentEffectiveness.update(effectivenessId, data);
+                } else {
+                    // 创建新记录
+                    result = await window.API.treatmentEffectiveness.create(data);
+                }
+
+                if (result.status === 'Success') {
+                    showNotification(effectivenessId ? '评估记录更新成功' : '评估记录创建成功', 'success');
+                    closeEditEffectivenessModal();
+
+                    // 重新加载当前患者的评估记录
+                    const patientSelect = document.getElementById('effectivenessPatientSelect');
+                    if (patientSelect.value && typeof stemCellManager !== 'undefined') {
+                        stemCellManager.loadPatientEffectiveness(patientSelect.value);
+                    }
+                } else {
+                    showNotification(result.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('保存评估记录失败:', error);
+                showNotification('保存评估记录失败', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

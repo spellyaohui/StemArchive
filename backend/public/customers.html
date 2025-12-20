@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检客管理 - 干细胞治疗档案管理系统</title>
+    <link href="css/tailwind.css" rel="stylesheet">
+    <link href="css/fontawesome.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-dna text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">干细胞治疗档案管理系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="dashboard.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>仪表板
+                    </a>
+                    <a href="customers.html" class="nav-link hover:text-blue-200 transition-colors text-blue-200">
+                        <i class="fas fa-users mr-2"></i>检客管理
+                    </a>
+                    <a href="health-data.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-heartbeat mr-2"></i>健康数据
+                    </a>
+                    <a href="stem-cell.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-microscope mr-2"></i>干细胞管理
+                    </a>
+                    <a href="reports.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-file-medical mr-2"></i>报告查看
+                    </a>
+                    <a href="statistics.html" class="nav-link hover:text-blue-200 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>统计分析
+                    </a>
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-2 hover:text-blue-200 transition-colors">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="username">用户</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>个人资料
+                            </a>
+                            <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>系统设置
+                            </a>
+                            <div id="adminMenuItems" class="hidden border-t border-gray-200">
+                                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    管理员工具
+                                </div>
+                                <button onclick="showDepartmentManagementModal()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-hospital mr-2"></i>科室管理
+                                </button>
+                                <button onclick="showTreatmentTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-chart-pie mr-2"></i>治疗类型维护
+                                </button>
+                                <button onclick="showDiseaseTypeMaintenance()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-notes-medical mr-2"></i>病种分布维护
+                                </button>
+                            </div>
+                            <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">检客档案管理</h2>
+            <p class="text-gray-600">管理和查看所有检客的基本信息和健康档案</p>
+        </div>
+
+        <!-- 操作按钮和搜索 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                    <button id="addCustomerBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>新增检客
+                    </button>
+                    <button id="importCustomersBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-file-import mr-2"></i>批量导入
+                    </button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="customerSearch" placeholder="搜索检客..."
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 检客列表 -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">性别</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">年龄</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">身份证号</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersList" class="bg-white divide-y divide-gray-200">
+                        <!-- 动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            <div class="bg-gray-50 px-6 py-3 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    显示 <span id="customersStart">0</span> 到 <span id="customersEnd">0</span> 条，共 <span id="customersTotal">0</span> 条记录
+                </div>
+                <div class="flex space-x-2" id="customersPagination">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400">© 2025 干细胞治疗档案管理系统. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+    <!-- 通知容器 -->
+    <div id="notificationContainer"></div>
+
+    <!-- 科室管理弹出层 -->
+    <div id="departmentManagementModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-7xl shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-semibold text-gray-900">科室管理</h3>
+                <button type="button" onclick="closeDepartmentManagementModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="max-h-screen overflow-y-auto">
+                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/customers.js"></script>
+    <script>
+        // 显示科室管理弹出层
+        function showDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+        }
+
+        // 关闭科室管理弹出层
+        function closeDepartmentManagementModal() {
+            document.getElementById('departmentManagementModal').classList.add('hidden');
+        }
+
+        // 点击弹出层外部关闭
+        document.getElementById('departmentManagementModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // ESC键关闭弹出层
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDepartmentManagementModal();
+            }
+        });
+
+        // 显示治疗类型维护弹出层
+        function showTreatmentTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=treatment-maintenance';
+        }
+
+        // 显示病种分布维护弹出层
+        function showDiseaseTypeMaintenance() {
+            // 关闭用户菜单
+            document.getElementById('userMenu').classList.add('hidden');
+            // 跳转到干细胞页面并触发维护功能
+            window.location.href = 'stem-cell.html?show=disease-maintenance';
+        }
+    </script>
+</body>
+</html>
