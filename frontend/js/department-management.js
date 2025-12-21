@@ -386,7 +386,7 @@ async function saveDepartment() {
     }
   } catch (error) {
     console.error('保存科室失败:', error);
-    showNotification('error', '网络错误，请检查连接');
+    showNotification('error', error.message || '网络错误，请检查连接');
   }
 }
 

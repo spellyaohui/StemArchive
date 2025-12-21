@@ -238,7 +238,9 @@ router.post('/', async (req, res) => {
             { name: 'createdBy', type: sql.NVarChar(100), value: createdBy || null }
         ]);
 
-        const newDepartmentId = insertResult[0].NewDepartmentID;
+        // insertResult 是完整的 result 对象，需要从 recordset 获取数据
+        const recordset = insertResult.recordset || insertResult;
+        const newDepartmentId = recordset[0]?.NewDepartmentID;
 
         // 获取完整的科室信息
         const fullResult = await executeQuery(`
