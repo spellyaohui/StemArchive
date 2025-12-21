@@ -149,6 +149,20 @@ router.post('/import', authMiddleware, async (req, res) => {
     try {
         const { identityCard, customerId, selectedExamIds } = req.body;
 
+        // 详细调试日志
+        console.log('========================================');
+        console.log('📋 收到体检数据导入请求');
+        console.log('请求体:', JSON.stringify(req.body, null, 2));
+        console.log('身份证号:', identityCard);
+        console.log('客户ID:', customerId);
+        console.log('选中的体检ID:', selectedExamIds);
+        console.log('选中的体检ID类型:', typeof selectedExamIds);
+        console.log('选中的体检ID是否为数组:', Array.isArray(selectedExamIds));
+        if (Array.isArray(selectedExamIds)) {
+            console.log('选中的体检ID数量:', selectedExamIds.length);
+        }
+        console.log('========================================');
+
         if (!identityCard) {
             return res.status(400).json({
                 status: 'Error',

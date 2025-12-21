@@ -1010,9 +1010,21 @@ class CustomersManager {
 
     try {
       addLog(`准备导入 ${selectedExamIds.length} 条体检记录...`);
+      
+      // 调试日志
+      console.log('========================================');
+      console.log('📋 前端发起导入请求');
+      console.log('身份证号:', identityCard);
+      console.log('客户ID:', customerId);
+      console.log('选中的体检ID:', selectedExamIds);
+      console.log('========================================');
 
       // 调用导入API
+      addLog(`正在调用API...`);
       const result = await window.API.examinationImport.importData(identityCard, customerId, selectedExamIds);
+      
+      // 调试日志
+      console.log('📋 API返回结果:', result);
 
       // 更新进度到100%
       progressBar.style.width = '100%';
