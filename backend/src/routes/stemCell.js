@@ -71,7 +71,11 @@ router.get('/patients',
     query('status')
       .optional()
       .isIn(['Active', 'Completed', 'Suspended', '进行中', 'Inactive'])
-      .withMessage('状态必须为Active、Completed、Suspended、进行中或Inactive')
+      .withMessage('状态必须为Active、Completed、Suspended、进行中或Inactive'),
+    query('search')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('搜索关键词长度不能超过100个字符')
   ],
   validateRequest,
   StemCellController.getAllPatients

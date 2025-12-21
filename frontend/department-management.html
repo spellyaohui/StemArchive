@@ -241,11 +241,12 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/department-management.js"></script>
+    <!-- JavaScript - 使用 defer 异步加载优化性能 -->
+    <script src="config.js" defer></script>
+    <script src="js/api-cache.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/department-management.js" defer></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 class ReportsManager {
   constructor() {
     this.reports = [];
-    this.selectedReportType = 'comparison';
+    this.selectedReportType = 'single';
     this.selectedCustomer = null;
     this.customerSearchTimeout = null;
     this.availableExams = [];
@@ -201,6 +201,11 @@ class ReportsManager {
 
     // 选择客户后重新加载报告列表
     this.loadReports();
+
+    // 如果当前是治疗总结类型，加载干细胞患者列表
+    if (this.selectedReportType === 'treatment') {
+      this.loadTreatmentPatients();
+    }
   }
 
   // 清除选中的检客
@@ -221,12 +226,13 @@ class ReportsManager {
       const traditionalResult = await window.API.report.getAll();
 
       // 检查当前激活的选项卡 - 使用selectedReportType而不是class
-      const activeTabName = this.selectedReportType || 'comparison';
+      const activeTabName = this.selectedReportType || 'single';
       console.log('loadReports - 当前选项卡:', activeTabName, '选择的客户:', this.selectedCustomer);
 
       // 只有选择了客户才加载健康评估和对比报告
       let healthAssessmentResponse = null;
       let comparisonResponse = null;
+      let treatmentSummaryResponse = null;
 
       if (this.selectedCustomer && this.selectedCustomer.id && this.selectedCustomer.id.trim() !== '') {
         // 加载健康评估报告
@@ -236,6 +242,10 @@ class ReportsManager {
         // 加载对比报告
         comparisonResponse = await window.API.service.get(`/reports/comparison/customer/${this.selectedCustomer.id}`);
         console.log('对比报告API响应:', comparisonResponse);
+
+        // 加载治疗总结报告
+        treatmentSummaryResponse = await window.API.service.get(`/reports/treatment-summary/customer/${this.selectedCustomer.id}`);
+        console.log('治疗总结API响应:', treatmentSummaryResponse);
       }
 
       const reportsData = [];
@@ -259,8 +269,8 @@ class ReportsManager {
         });
       }
 
-      // 处理健康评估报告（在非对比报告模块显示）
-      if (activeTabName !== 'comparison' && healthAssessmentResponse && healthAssessmentResponse.status === 'Success' && healthAssessmentResponse.data) {
+      // 处理健康评估报告（只在健康评估模块显示）
+      if (activeTabName === 'health' && healthAssessmentResponse && healthAssessmentResponse.status === 'Success' && healthAssessmentResponse.data) {
         healthAssessmentResponse.data.forEach(report => {
           reportsData.push({
             id: report.ID,
@@ -294,6 +304,27 @@ class ReportsManager {
             content: report.MarkdownContent || '暂无内容',
             summary: `AI健康对比分析报告，包含${examCount}次体检对比`,
             aiAnalysis: report.AIAnalysis || ''
+          });
+        });
+      }
+
+      // 处理治疗总结报告（在治疗总结模块显示）
+      if (activeTabName === 'treatment' && treatmentSummaryResponse && treatmentSummaryResponse.status === 'Success' && treatmentSummaryResponse.data) {
+        treatmentSummaryResponse.data.forEach(report => {
+          reportsData.push({
+            id: report.ID,
+            name: `${report.CustomerName}-治疗总结报告`,
+            title: `${report.CustomerName}-治疗总结报告`,
+            type: 'treatment_summary',
+            date: report.CreatedAt,
+            created_date: report.CreatedAt,
+            customer_name: report.CustomerName,
+            size: 'N/A',
+            content: report.MarkdownContent || '暂无内容',
+            summary: `AI治疗总结报告 - ${report.PrimaryDiagnosis || ''}`,
+            aiAnalysis: report.AIAnalysis || '',
+            patientNumber: report.PatientNumber,
+            primaryDiagnosis: report.PrimaryDiagnosis
           });
         });
       }
@@ -362,7 +393,8 @@ class ReportsManager {
     const icons = {
       'comparison': 'fa-file-medical',
       'comparison_report': 'fa-chart-line',
-      'treatment': 'fa-chart-line',
+      'treatment': 'fa-file-medical-alt',
+      'treatment_summary': 'fa-file-medical-alt',
       'health': 'fa-file-alt',
       'health_assessment': 'fa-heartbeat',
       'single': 'fa-file-download'
@@ -376,6 +408,7 @@ class ReportsManager {
       'comparison': '对比报告',
       'comparison_report': '健康对比分析',
       'treatment': '治疗总结',
+      'treatment_summary': 'AI治疗总结',
       'health': '健康评估',
       'health_assessment': 'AI健康评估',
       'single': '单次报告'
@@ -504,6 +537,8 @@ class ReportsManager {
             response = await window.API.service.delete(`/reports/health-assessment/${id}`);
           } else if (report.type === 'comparison_report') {
             response = await window.API.service.delete(`/reports/comparison/${id}`);
+          } else if (report.type === 'treatment_summary') {
+            response = await window.API.service.delete(`/reports/treatment-summary/${id}`);
           } else {
             // 传统报告使用通用删除API
             response = await window.API.service.delete(`/reports/${id}`);
@@ -554,6 +589,15 @@ class ReportsManager {
         if (response.status === 'Success' && response.data.AIAnalysis) {
           markdownContent = response.data.AIAnalysis;
           filename = `${report.customer_name}-健康对比分析报告-${new Date(report.date).toISOString().split('T')[0]}.md`;
+        }
+      } else if (report.type === 'treatment_summary') {
+        // 调用治疗总结API获取完整数据
+        console.log('下载Markdown - 调用治疗总结API');
+        const response = await window.API.service.get(`/reports/treatment-summary/${id}`);
+        console.log('下载Markdown - 治疗总结API响应:', response);
+        if (response.status === 'Success' && response.data.AIAnalysis) {
+          markdownContent = response.data.AIAnalysis;
+          filename = `${report.customer_name}-治疗总结报告-${new Date(report.date).toISOString().split('T')[0]}.md`;
         }
       }
 
@@ -606,6 +650,10 @@ class ReportsManager {
         console.log('转换PDF - 调用对比报告API');
         response = await window.API.service.post(`/reports/comparison/${id}/convert-pdf`);
         console.log('转换PDF - 对比报告API响应:', response);
+      } else if (report.type === 'treatment_summary') {
+        console.log('转换PDF - 调用治疗总结API');
+        response = await window.API.service.post(`/reports/treatment-summary/${id}/convert-pdf`);
+        console.log('转换PDF - 治疗总结API响应:', response);
       }
 
       // 关闭加载提示
@@ -736,6 +784,12 @@ class ReportsManager {
       // 处理单次报告
       if (reportType === 'single') {
         await this.generateSingleReport();
+        return;
+      }
+
+      // 处理治疗总结报告
+      if (reportType === 'treatment') {
+        await this.generateTreatmentSummary();
         return;
       }
 
@@ -1597,7 +1651,8 @@ class ReportsManager {
         // 控制历史报告部分的显示/隐藏
         const historySection = document.getElementById('historyReportsSection');
         if (historySection) {
-          if (type === 'comparison') {
+          // 对比报告、治疗总结、健康评估都显示历史报告
+          if (type === 'comparison' || type === 'treatment' || type === 'health') {
             historySection.style.display = 'block';
           } else {
             historySection.style.display = 'none';
@@ -1609,16 +1664,16 @@ class ReportsManager {
       });
     });
 
-    // 默认选中第一个按钮（对比报告）
-    const firstReportBtn = document.querySelector('.report-type-btn[data-tab="comparison"]');
+    // 默认选中第一个按钮（单次报告）
+    const firstReportBtn = document.querySelector('.report-type-btn[data-tab="single"]');
     if (firstReportBtn) {
-      firstReportBtn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-200');
+      firstReportBtn.classList.add('ring-2', 'ring-orange-500', 'bg-orange-200');
     }
 
-    // 默认只显示对比报告的历史报告部分
+    // 默认隐藏历史报告部分（单次报告不显示历史）
     const historySection = document.getElementById('historyReportsSection');
     if (historySection) {
-      historySection.style.display = 'block';
+      historySection.style.display = 'none';
     }
 
     // 报告类型选择变化
@@ -1668,6 +1723,14 @@ class ReportsManager {
     if (clearComparisonSelectionsBtn) {
       clearComparisonSelectionsBtn.addEventListener('click', () => {
         this.clearComparisonSelections();
+      });
+    }
+
+    // 治疗总结患者选择事件
+    const treatmentPatientSelect = document.getElementById('treatmentPatientSelect');
+    if (treatmentPatientSelect) {
+      treatmentPatientSelect.addEventListener('change', () => {
+        this.updateTreatmentPatientInfo();
       });
     }
 
@@ -1772,6 +1835,7 @@ class ReportsManager {
     const singleReportSection = document.getElementById('singleReportSection');
     const healthAssessmentSection = document.getElementById('healthAssessmentSection');
     const comparisonReportSection = document.getElementById('comparisonReportSection');
+    const treatmentSummarySection = document.getElementById('treatmentSummarySection');
 
     // 隐藏所有专用区域
     if (singleReportSection) {
@@ -1782,6 +1846,9 @@ class ReportsManager {
     }
     if (comparisonReportSection) {
       comparisonReportSection.classList.add('hidden');
+    }
+    if (treatmentSummarySection) {
+      treatmentSummarySection.classList.add('hidden');
     }
 
     if (type === 'comparison') {
@@ -1800,6 +1867,16 @@ class ReportsManager {
       // 显示健康评估区域
       if (healthAssessmentSection) {
         healthAssessmentSection.classList.remove('hidden');
+      }
+      this.setDefaultDateRangeForType(type);
+    } else if (type === 'treatment') {
+      // 显示治疗总结区域
+      if (treatmentSummarySection) {
+        treatmentSummarySection.classList.remove('hidden');
+      }
+      // 如果已选择检客，加载干细胞患者列表
+      if (this.selectedCustomer) {
+        this.loadTreatmentPatients();
       }
       this.setDefaultDateRangeForType(type);
     } else {
@@ -2807,6 +2884,520 @@ class ReportsManager {
     } catch (error) {
       console.error('查看对比报告失败:', error);
       NotificationHelper.error('查看对比报告失败');
+    }
+  }
+
+  // ==================== 治疗总结报告相关方法 ====================
+
+  // 加载干细胞患者列表
+  async loadTreatmentPatients() {
+    if (!this.selectedCustomer) {
+      return;
+    }
+
+    const patientSelect = document.getElementById('treatmentPatientSelect');
+    if (!patientSelect) return;
+
+    try {
+      const response = await window.API.service.get(`/reports/treatment-summary/patients?customerId=${this.selectedCustomer.id}`);
+
+      if (response.status === 'Success' && response.data) {
+        const patients = response.data;
+
+        if (patients.length === 0) {
+          patientSelect.innerHTML = '<option value="">该检客暂无干细胞治疗记录</option>';
+          patientSelect.disabled = true;
+          return;
+        }
+
+        patientSelect.innerHTML = '<option value="">请选择干细胞治疗患者</option>';
+        patients.forEach(patient => {
+          const option = document.createElement('option');
+          option.value = patient.ID;
+          option.textContent = `${patient.PatientNumber} - ${patient.PrimaryDiagnosis || '未知诊断'} (输注${patient.InfusionCount}次, 评估${patient.EffectivenessCount}次)`;
+          option.dataset.patientNumber = patient.PatientNumber;
+          option.dataset.diagnosis = patient.PrimaryDiagnosis || '';
+          option.dataset.infusionCount = patient.InfusionCount;
+          option.dataset.effectivenessCount = patient.EffectivenessCount;
+          patientSelect.appendChild(option);
+        });
+
+        patientSelect.disabled = false;
+      } else {
+        patientSelect.innerHTML = '<option value="">加载患者列表失败</option>';
+        patientSelect.disabled = true;
+      }
+    } catch (error) {
+      console.error('加载干细胞患者列表失败:', error);
+      patientSelect.innerHTML = '<option value="">加载患者列表失败</option>';
+      patientSelect.disabled = true;
+    }
+  }
+
+  // 更新患者信息显示
+  updateTreatmentPatientInfo() {
+    const patientSelect = document.getElementById('treatmentPatientSelect');
+    const patientInfoDiv = document.getElementById('treatmentPatientInfo');
+
+    if (!patientSelect || !patientInfoDiv) return;
+
+    const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+
+    if (patientSelect.value && selectedOption) {
+      document.getElementById('patientNumber').textContent = selectedOption.dataset.patientNumber || '-';
+      document.getElementById('patientDiagnosis').textContent = selectedOption.dataset.diagnosis || '-';
+      document.getElementById('patientInfusionCount').textContent = `${selectedOption.dataset.infusionCount || 0}次`;
+      document.getElementById('patientEffectivenessCount').textContent = `${selectedOption.dataset.effectivenessCount || 0}次`;
+      patientInfoDiv.classList.remove('hidden');
+    } else {
+      patientInfoDiv.classList.add('hidden');
+    }
+  }
+
+  // 生成治疗总结报告
+  async generateTreatmentSummary() {
+    if (!this.selectedCustomer) {
+      NotificationHelper.error('请选择检客');
+      return;
+    }
+
+    const patientSelect = document.getElementById('treatmentPatientSelect');
+    const patientId = patientSelect?.value;
+
+    if (!patientId) {
+      NotificationHelper.error('请选择干细胞治疗患者');
+      return;
+    }
+
+    // 防止重复提交
+    if (this.isGeneratingReport) {
+      NotificationHelper.info('治疗总结报告正在生成中，请耐心等待AI处理完成', '处理中');
+      return;
+    }
+
+    this.isGeneratingReport = true;
+    this.disableGenerateButton();
+
+    let aiNotification = null;
+
+    try {
+      // 使用AI进度通知
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+        ? window.EnhancedNotificationHelper.aiProgress('正在与 DeepSeek AI 通信，生成治疗总结报告...', {
+            title: 'AI 治疗总结'
+          })
+        : NotificationHelper.loading('正在生成治疗总结报告...');
+
+      const generateData = {
+        customerId: this.selectedCustomer.id,
+        patientId: patientId
+      };
+
+      const response = await window.API.service.post('/reports/treatment-summary/generate', generateData);
+
+      if (response.status === 'Success') {
+        // 更新通知状态
+        if (aiNotification && aiNotification.updateStatus) {
+          aiNotification.updateStatus('AI 正在分析治疗数据...');
+        }
+
+        // 开始轮询生成状态
+        this.pollTreatmentSummaryStatus(response.data.reportId, aiNotification);
+      } else {
+        // 失败通知
+        if (aiNotification && aiNotification.complete) {
+          aiNotification.complete(response.message || '生成治疗总结报告失败', false);
+        } else if (aiNotification && aiNotification.remove) {
+          aiNotification.remove();
+          NotificationHelper.error(response.message || '生成治疗总结报告失败', '生成失败');
+        }
+      }
+
+    } catch (error) {
+      console.error('生成治疗总结报告失败:', error);
+
+      // 失败通知
+      if (aiNotification && aiNotification.complete) {
+        aiNotification.complete('网络连接异常或AI服务暂时不可用', false);
+      } else if (aiNotification && aiNotification.remove) {
+        aiNotification.remove();
+        NotificationHelper.error('网络连接异常或AI服务暂时不可用，请稍后重试', '服务异常');
+      }
+    } finally {
+      this.isGeneratingReport = false;
+      this.enableGenerateButton();
+    }
+  }
+
+  // 轮询治疗总结报告生成状态
+  async pollTreatmentSummaryStatus(reportId, aiNotification = null) {
+    const maxAttempts = 60;
+    let attempts = 0;
+
+    if (!aiNotification) {
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+        ? window.EnhancedNotificationHelper.aiProgress('治疗总结报告正在生成中...', {
+            title: 'AI 治疗总结'
+          })
+        : null;
+    }
+
+    const poll = async () => {
+      try {
+        const response = await window.API.service.get(`/reports/treatment-summary/${reportId}`);
+
+        if (response.status === 'Success' && response.data) {
+          const report = response.data;
+
+          if (report.Status === 'completed') {
+            // 完成通知
+            if (aiNotification && aiNotification.complete) {
+              aiNotification.complete('治疗总结报告生成完成！', true);
+            } else {
+              NotificationHelper.clearProcessing();
+              NotificationHelper.success('治疗总结报告生成完成！', '生成完成');
+            }
+            this.loadReports();
+            return;
+          } else if (report.Status === 'failed') {
+            // 失败通知
+            if (aiNotification && aiNotification.complete) {
+              aiNotification.complete(report.ErrorMessage || 'AI分析遇到问题，请重试', false);
+            } else {
+              NotificationHelper.clearProcessing();
+              NotificationHelper.error(`治疗总结报告生成失败: ${report.ErrorMessage || 'AI分析遇到问题'}`, '生成失败');
+            }
+            return;
+          }
+          
+          // 继续轮询 - 更新状态提示
+          if (aiNotification && aiNotification.updateStatus && attempts % 3 === 0) {
+            const messages = [
+              'AI 正在分析治疗档案...',
+              '正在整理输注记录...',
+              '正在分析疗效评估数据...',
+              '正在生成治疗总结...'
+            ];
+            const msgIndex = Math.floor(attempts / 3) % messages.length;
+            aiNotification.updateStatus(messages[msgIndex]);
+          }
+        } else {
+          if (aiNotification && aiNotification.complete) {
+            aiNotification.complete('获取治疗总结报告状态失败', false);
+          } else {
+            NotificationHelper.error('获取治疗总结报告状态失败，请刷新页面查看', '状态查询失败');
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('轮询治疗总结报告状态失败:', error);
+        if (aiNotification && aiNotification.complete) {
+          aiNotification.complete('网络连接异常，无法获取报告状态', false);
+        } else {
+          NotificationHelper.error('网络连接异常，无法获取报告状态', '连接异常');
+        }
+        return;
+      }
+
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 10000);
+      } else {
+        if (aiNotification && aiNotification.complete) {
+          aiNotification.complete('处理超时，请稍后手动查看', false);
+        } else {
+          NotificationHelper.error('报告生成时间较长，请稍后手动查看', '处理超时');
+        }
+      }
+    };
+
+    setTimeout(poll, 2000);
+  }
+
+  // 查看治疗总结报告
+  async viewTreatmentSummaryReport(reportId) {
+    try {
+      const response = await window.API.service.get(`/reports/treatment-summary/${reportId}`);
+
+      if (response.status === 'Success' && response.data) {
+        const report = response.data;
+        this.showTreatmentSummaryModal(report);
+      } else {
+        NotificationHelper.error('获取治疗总结报告失败');
+      }
+    } catch (error) {
+      console.error('查看治疗总结报告失败:', error);
+      NotificationHelper.error('查看治疗总结报告失败');
+    }
+  }
+
+  // 显示治疗总结报告模态框
+  showTreatmentSummaryModal(report) {
+    const modalContainer = document.getElementById('modalContainer');
+    if (!modalContainer) return;
+
+    const formatProcessingTime = (seconds) => {
+      if (!seconds) return '未知';
+      if (seconds < 60) return `${seconds}秒`;
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}分${remainingSeconds}秒`;
+    };
+
+    const getStatusDisplay = (status) => {
+      switch (status) {
+      case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
+      case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
+      case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
+      default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
+      }
+    };
+
+    const statusInfo = getStatusDisplay(report.Status);
+
+    modalContainer.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <!-- 头部 -->
+          <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-teal-50">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center space-x-3">
+                <i class="fas fa-file-medical-alt text-2xl text-green-600"></i>
+                <div>
+                  <h3 class="text-xl font-semibold text-gray-900">${report.CustomerName} - 干细胞治疗总结报告</h3>
+                  <p class="text-sm text-gray-600 mt-1">AI智能治疗总结分析报告</p>
+                </div>
+              </div>
+              <button onclick="reportsManager.closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 内容区域 -->
+          <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+              <!-- 报告基本信息卡片 -->
+              <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-6 mb-6 border border-green-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">患者编号</div>
+                    <div class="font-mono text-sm font-semibold text-gray-800">${report.PatientNumber || '-'}</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">主要诊断</div>
+                    <div class="text-sm font-semibold text-gray-800">${report.PrimaryDiagnosis || '-'}</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">生成时间</div>
+                    <div class="text-sm font-semibold text-gray-800">${this.formatDateTime(report.CreatedAt)}</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">状态</div>
+                    <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}">
+                      <i class="fas ${statusInfo.icon} mr-1"></i>
+                      ${statusInfo.text}
+                    </div>
+                  </div>
+                </div>
+
+                ${report.APIModel ? `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-green-100">
+                  <div class="flex items-center">
+                    <i class="fas fa-robot text-green-500 mr-2"></i>
+                    <div>
+                      <div class="text-xs text-gray-500">AI模型</div>
+                      <div class="font-medium text-gray-800">${report.APIModel}</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-clock text-teal-500 mr-2"></i>
+                    <div>
+                      <div class="text-xs text-gray-500">处理时间</div>
+                      <div class="font-medium text-gray-800">${formatProcessingTime(report.ProcessingTime)}</div>
+                    </div>
+                  </div>
+                </div>
+                ` : ''}
+              </div>
+
+              <!-- 状态说明 -->
+              <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-green-50 to-teal-50 px-6 py-4 border-b border-gray-200">
+                  <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class="fas fa-info-circle text-green-600 mr-2"></i>
+                    报告状态说明
+                  </h4>
+                </div>
+                <div class="p-6">
+                  ${report.Status === 'completed' ? `
+                  <div class="text-center py-8">
+                    <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
+                    <p class="text-lg text-gray-700 mb-2">治疗总结报告已完成</p>
+                    <p class="text-sm text-gray-500 mb-4">AI已成功分析您的治疗数据并生成治疗总结报告</p>
+                    <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                      <p class="text-sm text-green-700">
+                        <i class="fas fa-file-medical-alt mr-2"></i>
+                        报告包含治疗过程回顾、疗效评估分析、治疗效果评价和后续建议
+                      </p>
+                    </div>
+                  </div>
+                  ` : report.Status === 'processing' ? `
+                  <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-5xl text-blue-600 mb-4"></i>
+                    <p class="text-lg text-gray-600 mb-2">治疗总结报告正在生成中</p>
+                    <p class="text-sm text-gray-500">AI正在分析您的治疗数据，请稍候...</p>
+                  </div>
+                  ` : report.Status === 'failed' ? `
+                  <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-600 mb-4"></i>
+                    <p class="text-lg text-gray-600 mb-2">治疗总结报告生成失败</p>
+                    <p class="text-sm text-gray-500">${report.ErrorMessage || '请检查网络连接或重新尝试生成'}</p>
+                  </div>
+                  ` : `
+                  <div class="text-center py-8">
+                    <i class="fas fa-question-circle text-5xl text-gray-400 mb-4"></i>
+                    <p class="text-lg text-gray-600 mb-2">报告状态未知</p>
+                    <p class="text-sm text-gray-500">请联系管理员获取帮助</p>
+                  </div>
+                  `}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部操作栏 -->
+          <div class="p-6 border-t border-gray-200 bg-gray-50">
+            <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+              <div class="text-sm text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>
+                报告生成时间：${this.formatDateTime(report.CreatedAt)}
+              </div>
+
+              <div class="flex flex-wrap gap-3">
+                ${report.Status === 'completed' && report.AIAnalysis ? `
+                <button onclick="reportsManager.downloadTreatmentSummaryPDF('${report.ID}')"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        title="转换为PDF格式并下载">
+                  <i class="fas fa-file-pdf mr-2"></i>
+                  转换PDF
+                </button>
+                <button onclick="reportsManager.downloadTreatmentSummaryMarkdown('${report.ID}')"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                  <i class="fas fa-file-alt mr-2"></i>
+                  下载原始文档
+                </button>
+                ` : ''}
+                <button onclick="reportsManager.closeModal()"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                  <i class="fas fa-times mr-2"></i>
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 下载治疗总结报告PDF
+  async downloadTreatmentSummaryPDF(reportId) {
+    let loadingNotification = null;
+    
+    try {
+      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+
+      const response = await window.API.service.post(`/reports/treatment-summary/${reportId}/convert-pdf`);
+
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
+
+      if (response.status === 'Success' && response.data) {
+        const { pdfData, fileName } = response.data;
+
+        if (!pdfData) {
+          NotificationHelper.error('PDF数据为空，转换失败');
+          return;
+        }
+
+        const binaryString = atob(pdfData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || `治疗总结报告_${reportId}.pdf`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 100);
+
+        NotificationHelper.success(`PDF文件已成功下载：${fileName}`);
+      } else {
+        NotificationHelper.error(response.message || 'PDF转换失败');
+      }
+    } catch (error) {
+      console.error('PDF转换失败:', error);
+
+      if (loadingNotification) {
+        loadingNotification.remove();
+        loadingNotification = null;
+      }
+
+      NotificationHelper.error('PDF转换失败，请稍后重试');
+    }
+  }
+
+  // 下载治疗总结报告Markdown
+  async downloadTreatmentSummaryMarkdown(reportId) {
+    try {
+      NotificationHelper.info('正在准备下载治疗总结报告...', '下载中');
+
+      const response = await window.API.service.get(`/reports/treatment-summary/${reportId}`);
+
+      if (response.status === 'Success' && response.data) {
+        const report = response.data;
+        const content = report.AIAnalysis || '';
+
+        if (!content) {
+          NotificationHelper.error('报告内容为空，无法下载');
+          return;
+        }
+
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${report.CustomerName}-治疗总结报告-${new Date().toISOString().split('T')[0]}.md`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 100);
+
+        NotificationHelper.success('治疗总结报告已成功下载');
+      } else {
+        NotificationHelper.error('获取报告数据失败');
+      }
+    } catch (error) {
+      console.error('下载治疗总结报告失败:', error);
+      NotificationHelper.error('下载失败，请稍后重试');
     }
   }
 }

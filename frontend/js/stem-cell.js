@@ -11,8 +11,10 @@ class StemCellManager {
     this.totalPatients = 0;
     this.filters = {
       date: '',
-      status: ''
+      status: '',
+      search: ''
     };
+    this.searchDebounceTimer = null;
     this.init();
   }
 
@@ -33,6 +35,10 @@ class StemCellManager {
 
       if (this.filters.status) {
         params.status = this.filters.status;
+      }
+
+      if (this.filters.search) {
+        params.search = this.filters.search;
       }
 
       const result = await window.API.stemCell.patients.getAll(params);
@@ -422,20 +428,23 @@ class StemCellManager {
 
     modalContainer.innerHTML = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <div class="p-6 border-b border-gray-200">
+                <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                         <h3 class="text-lg font-medium text-gray-900">
                             ${isAdd ? '创建患者档案' : isEdit ? '编辑患者档案' : '患者详情'}
                         </h3>
+                        <button type="button" onclick="stemCellManager.closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
                     </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- 基本信息 -->
+                    <div class="p-6 overflow-y-auto" style="max-height: calc(90vh - 140px);">
+                        <div class="grid grid-cols-1 ${!isAdd && patient ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6">
+                            <!-- 左侧：基本信息 -->
                             <div class="space-y-4">
                                 <h4 class="font-medium text-gray-900 border-b pb-2">基本信息</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-4">
                                     ${isAdd ? `
-                                        <div class="md:col-span-2">
+                                        <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">选择检客 *</label>
                                             <select id="customerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                                 <option value="">请选择检客...</option>
@@ -443,20 +452,22 @@ class StemCellManager {
                                             </select>
                                         </div>
                                     ` : `
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">患者编号</label>
-                                            <input type="text" value="${patient?.PatientNumber || ''}"
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg ${isView ? 'bg-gray-50' : ''}"
-                                                   ${isView ? 'readonly' : ''}>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
-                                            <input type="text" value="${patient?.CustomerName || ''}"
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg ${isView ? 'bg-gray-50' : ''}"
-                                                   ${isView ? 'readonly' : ''}>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">患者编号</label>
+                                                <input type="text" value="${patient?.PatientNumber || ''}"
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg ${isView ? 'bg-gray-50' : ''}"
+                                                       ${isView ? 'readonly' : ''}>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">姓名</label>
+                                                <input type="text" value="${patient?.CustomerName || ''}"
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg ${isView ? 'bg-gray-50' : ''}"
+                                                       ${isView ? 'readonly' : ''}>
+                                            </div>
                                         </div>
                                     `}
-                                    <div class="md:col-span-2">
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">主要诊断</label>
                                         ${isView ? `
                                             <input type="text" value="${patient?.PrimaryDiagnosis || '未设置'}"
@@ -488,11 +499,9 @@ class StemCellManager {
                                         </div>
                                     ` : ''}
                                 </div>
-                            </div>
 
-                            <!-- 治疗方案 -->
-                            <div class="space-y-4">
-                                <h4 class="font-medium text-gray-900 border-b pb-2">治疗方案</h4>
+                                <!-- 治疗方案 -->
+                                <h4 class="font-medium text-gray-900 border-b pb-2 mt-6">治疗方案</h4>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">治疗方案</label>
                                     <textarea id="treatmentPlan" rows="3"
@@ -514,32 +523,57 @@ class StemCellManager {
                                 </div>
                                 ` : ''}
                             </div>
-                        </div>
 
-                        <!-- 治疗历史 -->
-                        ${patient ? `
-                            <div class="mt-6">
-                                <h4 class="font-medium text-gray-900 border-b pb-2 mb-4">治疗历史</h4>
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">首次治疗</span>
-                                            <span class="font-medium">${patient.first_treatment || '-'}</span>
-                                        </div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">最近治疗</span>
-                                            <span class="font-medium">${patient.last_treatment || '-'}</span>
-                                        </div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">治疗医生</span>
-                                            <span class="font-medium">${patient.doctor || '-'}</span>
-                                        </div>
+                            <!-- 中间：治疗概况（仅非新增模式显示） -->
+                            ${!isAdd && patient ? `
+                            <div class="space-y-4">
+                                <h4 class="font-medium text-gray-900 border-b pb-2">治疗概况</h4>
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600">首次治疗</span>
+                                        <span class="font-medium" id="firstTreatmentDate">${patient.first_treatment ? new Date(patient.first_treatment).toLocaleDateString('zh-CN') : '-'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600">最近治疗</span>
+                                        <span class="font-medium" id="lastTreatmentDate">${patient.last_treatment ? new Date(patient.last_treatment).toLocaleDateString('zh-CN') : '-'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600">治疗医生</span>
+                                        <span class="font-medium" id="attendingDoctor">${patient.doctor || '-'}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600">总回输次数</span>
+                                        <span class="font-medium">${patient.TotalInfusionCount || 0} 次</span>
+                                    </div>
+                                </div>
+
+                                <!-- 治疗效果评估摘要 -->
+                                <h4 class="font-medium text-gray-900 border-b pb-2 mt-4">最新疗效评估</h4>
+                                <div id="effectivenessSummary" class="bg-gray-50 rounded-lg p-4">
+                                    <div class="text-center py-2 text-gray-500 text-sm">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>加载中...
                                     </div>
                                 </div>
                             </div>
-                        ` : ''}
+                            ` : `
+                            <!-- 新增模式下的占位 -->
+                            <div></div>
+                            `}
 
-                        <div class="flex justify-end space-x-3 mt-6">
+                            <!-- 右侧：治疗时间线（仅非新增模式显示） -->
+                            ${!isAdd && patient ? `
+                            <div class="space-y-4">
+                                <h4 class="font-medium text-gray-900 border-b pb-2">治疗时间线</h4>
+                                <div id="treatmentTimeline" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                                    <div class="text-center py-4 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>加载中...
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
                             <button type="button" onclick="stemCellManager.closeModal()"
                                     class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
                                 ${isView ? '关闭' : '取消'}
@@ -555,6 +589,12 @@ class StemCellManager {
                 </div>
             </div>
         `;
+
+    // 非新增模式下加载治疗时间线和疗效评估
+    if (!isAdd && patient) {
+      this.loadTreatmentTimeline(patient.ID);
+      this.loadEffectivenessSummary(patient.ID);
+    }
   }
 
   // 显示排期模态框
@@ -858,6 +898,180 @@ class StemCellManager {
     const modalContainer = document.getElementById('modalContainer');
     if (modalContainer) {
       modalContainer.innerHTML = '';
+    }
+  }
+
+  // 加载治疗时间线数据
+  async loadTreatmentTimeline(patientId) {
+    const container = document.getElementById('treatmentTimeline');
+    if (!container) return;
+
+    try {
+      const result = await window.API.service.get(`/treatment-history/timeline/${patientId}?limit=20`);
+
+      if (result.status === 'Success' && result.data && result.data.length > 0) {
+        container.innerHTML = result.data.map(item => {
+          // 根据类型设置不同的图标和颜色
+          let icon, dotColor;
+          switch (item.type) {
+            case 'infusion':
+              icon = 'fa-syringe';
+              dotColor = 'bg-blue-500';
+              break;
+            case 'effectiveness':
+              icon = 'fa-chart-line';
+              dotColor = 'bg-green-500';
+              break;
+            default:
+              icon = 'fa-notes-medical';
+              dotColor = 'bg-gray-500';
+          }
+
+          // 格式化日期
+          const date = item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '-';
+
+          return `
+            <div class="flex items-start space-x-3 py-2 border-b border-gray-100 last:border-0">
+              <div class="flex-shrink-0 w-2 h-2 mt-2 rounded-full ${dotColor}"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-medium text-gray-900 truncate">${item.title || item.eventType || '未知事件'}</p>
+                  <span class="text-xs text-gray-400 ml-2 flex-shrink-0">${date}</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">${item.description || '-'}</p>
+                ${item.response ? `<span class="inline-block mt-1 px-1.5 py-0.5 text-xs rounded ${this.getResponseBadgeClass(item.response)}">${item.response}</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = `
+          <div class="text-center py-4 text-gray-500">
+            <i class="fas fa-inbox text-2xl mb-2"></i>
+            <p class="text-sm">暂无治疗记录</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('加载治疗时间线失败:', error);
+      container.innerHTML = `
+        <div class="text-center py-4 text-red-500">
+          <i class="fas fa-exclamation-circle mr-2"></i>加载失败
+        </div>
+      `;
+    }
+  }
+
+  // 获取治疗响应的徽章样式
+  getResponseBadgeClass(response) {
+    const responseClasses = {
+      '显著改善': 'bg-green-100 text-green-800',
+      '改善': 'bg-green-50 text-green-700',
+      '稳定': 'bg-blue-100 text-blue-800',
+      '恶化': 'bg-red-100 text-red-800',
+      '无效': 'bg-gray-100 text-gray-800',
+      'Completed': 'bg-green-100 text-green-800',
+      'Scheduled': 'bg-blue-100 text-blue-800',
+      'In Progress': 'bg-yellow-100 text-yellow-800',
+      'Cancelled': 'bg-red-100 text-red-800'
+    };
+    return responseClasses[response] || 'bg-gray-100 text-gray-800';
+  }
+
+  // 加载最新疗效评估摘要
+  async loadEffectivenessSummary(patientId) {
+    const container = document.getElementById('effectivenessSummary');
+    if (!container) return;
+
+    try {
+      // 获取所有疗效评估记录，用于计算首次治疗等信息
+      const result = await window.API.service.get(`/treatment-effectiveness?patientId=${patientId}&limit=50`);
+
+      if (result.status === 'Success' && result.data && result.data.length > 0) {
+        const assessments = result.data;
+        const latest = assessments[0];
+        const date = latest.AssessmentDate ? new Date(latest.AssessmentDate).toLocaleDateString('zh-CN') : '-';
+        
+        // 查找首次治疗（治疗前或最早的评估）
+        const firstAssessment = assessments.find(a => a.AssessmentPeriod === '治疗前') || assessments[assessments.length - 1];
+        const firstTreatmentDate = firstAssessment?.AssessmentDate ? new Date(firstAssessment.AssessmentDate).toLocaleDateString('zh-CN') : null;
+        
+        // 查找最近治疗（排除治疗前的最新评估）
+        const latestTreatment = assessments.find(a => a.AssessmentPeriod !== '治疗前');
+        const lastTreatmentDate = latestTreatment?.AssessmentDate ? new Date(latestTreatment.AssessmentDate).toLocaleDateString('zh-CN') : null;
+        
+        // 获取医生信息（优先使用最新的非治疗前评估的医生）
+        const doctorName = latestTreatment?.DoctorID || latest.DoctorID || '-';
+
+        // 更新治疗概况中的数据
+        const firstTreatmentEl = document.getElementById('firstTreatmentDate');
+        const lastTreatmentEl = document.getElementById('lastTreatmentDate');
+        const doctorEl = document.getElementById('attendingDoctor');
+        
+        // 首次治疗日期：如果原数据为空则更新
+        if (firstTreatmentEl && (firstTreatmentEl.textContent === '-' || firstTreatmentEl.textContent === '')) {
+          firstTreatmentEl.textContent = firstTreatmentDate || '-';
+        }
+        // 最近治疗日期：如果原数据为空则更新
+        if (lastTreatmentEl && (lastTreatmentEl.textContent === '-' || lastTreatmentEl.textContent === '')) {
+          lastTreatmentEl.textContent = lastTreatmentDate || '-';
+        }
+        // 治疗医生：始终使用疗效评估中的医生信息（如果有的话）
+        if (doctorEl && doctorName && doctorName !== '-') {
+          doctorEl.textContent = doctorName;
+        }
+        
+        container.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">评估日期</span>
+              <span class="font-medium">${date}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">评估时期</span>
+              <span class="font-medium">${latest.AssessmentPeriod || '-'}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">治疗效果</span>
+              <span class="px-2 py-0.5 text-xs rounded-full ${this.getResponseBadgeClass(latest.EffectivenessType)}">${latest.EffectivenessType || '-'}</span>
+            </div>
+            ${latest.OverallEffectiveness ? `
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">总体评分</span>
+              <span class="font-medium">${latest.OverallEffectiveness}分</span>
+            </div>
+            ` : ''}
+            ${latest.SymptomImprovement ? `
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">症状改善</span>
+              <span class="font-medium">${latest.SymptomImprovement}分</span>
+            </div>
+            ` : ''}
+            ${latest.PatientSatisfaction ? `
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">患者满意度</span>
+              <span class="font-medium">${latest.PatientSatisfaction}/10</span>
+            </div>
+            ` : ''}
+            <div class="text-xs text-gray-400 mt-2 pt-2 border-t">
+              共 ${assessments.length} 条评估记录
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="text-center py-2 text-gray-500 text-sm">
+            <i class="fas fa-clipboard-list mr-2"></i>暂无评估记录
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('加载疗效评估摘要失败:', error);
+      container.innerHTML = `
+        <div class="text-center py-2 text-red-500 text-sm">
+          <i class="fas fa-exclamation-circle mr-2"></i>加载失败
+        </div>
+      `;
     }
   }
 
@@ -1555,6 +1769,54 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
       });
     }
 
+    // 搜索框
+    const searchInput = document.getElementById('patientSearchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const value = e.target.value.trim();
+        // 显示/隐藏清除按钮
+        if (clearSearchBtn) {
+          clearSearchBtn.classList.toggle('hidden', !value);
+        }
+        // 防抖处理
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer);
+        }
+        this.searchDebounceTimer = setTimeout(() => {
+          this.filters.search = value;
+          this.currentPage = 1; // 搜索时重置到第一页
+          this.loadPatients();
+        }, 300);
+      });
+
+      // 回车搜索
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          if (this.searchDebounceTimer) {
+            clearTimeout(this.searchDebounceTimer);
+          }
+          this.filters.search = e.target.value.trim();
+          this.currentPage = 1;
+          this.loadPatients();
+        }
+      });
+    }
+
+    // 清除搜索按钮
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', () => {
+        const searchInput = document.getElementById('patientSearchInput');
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        clearSearchBtn.classList.add('hidden');
+        this.filters.search = '';
+        this.currentPage = 1;
+        this.loadPatients();
+      });
+    }
+
     // 日期筛选
     const dateFilter = document.getElementById('scheduleDateFilter');
     if (dateFilter) {
@@ -1570,6 +1832,7 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
       statusFilter.addEventListener('change', (e) => {
         // 状态值直接使用，HTML中已经设置为正确的英文值
         this.filters.status = e.target.value;
+        this.currentPage = 1; // 筛选时重置到第一页
         this.loadPatients();
       });
     }
@@ -1892,7 +2155,24 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
   showTreatmentEffectivenessModal() {
     const modal = document.getElementById('treatmentEffectivenessModal');
     modal.classList.remove('hidden');
-    this.loadEffectivenessPatients();
+    
+    // 检查是否已选中患者
+    const selectedPatient = this.getSelectedPatient();
+    
+    this.loadEffectivenessPatients().then(() => {
+      if (selectedPatient) {
+        // 如果已选中患者，自动选择并加载该患者的评估记录
+        const select = document.getElementById('effectivenessPatientSelect');
+        select.value = selectedPatient.ID;
+        
+        // 存储CustomerID和PatientID到全局变量
+        window.currentEffectivenessCustomerId = selectedPatient.CustomerID;
+        window.currentEffectivenessPatientId = selectedPatient.ID;
+        
+        // 加载该患者的评估记录
+        this.loadPatientEffectiveness(selectedPatient.ID);
+      }
+    });
   }
 
   // 加载可用于评估的患者列表
@@ -1913,8 +2193,12 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
           select.appendChild(option);
         });
 
+        // 移除旧的事件监听器，避免重复绑定
+        const newSelect = select.cloneNode(true);
+        select.parentNode.replaceChild(newSelect, select);
+        
         // 绑定患者选择事件
-        select.addEventListener('change', (e) => {
+        newSelect.addEventListener('change', (e) => {
           if (e.target.value) {
             // 获取选中的选项
             const selectedOption = e.target.options[e.target.selectedIndex];
@@ -1927,12 +2211,16 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
             this.clearEffectivenessList();
           }
         });
+        
+        return true;
       } else {
         showNotification('加载患者列表失败', 'error');
+        return false;
       }
     } catch (error) {
       console.error('加载患者列表失败:', error);
       showNotification('加载患者列表失败', 'error');
+      return false;
     }
   }
 
@@ -2098,6 +2386,7 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
       document.getElementById('assessmentDate').value = this.formatDateForInput(data.AssessmentDate);
       document.getElementById('assessmentPeriod').value = data.AssessmentPeriod || '';
       document.getElementById('effectivenessType').value = data.EffectivenessType || '';
+      document.getElementById('doctorName').value = data.DoctorID || '';
       document.getElementById('overallEffectiveness').value = data.OverallEffectiveness || '';
       document.getElementById('symptomImprovement').value = data.SymptomImprovement || '';
       document.getElementById('qualityOfLifeImprovement').value = data.QualityOfLifeImprovement || '';
@@ -2113,6 +2402,7 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
     } else {
       // 新建模式 - 设置默认值
       document.getElementById('assessmentDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('doctorName').value = '';
       // CustomerID和PatientID在选择患者时已经设置到全局变量中了
     }
 

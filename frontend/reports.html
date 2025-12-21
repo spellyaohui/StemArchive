@@ -87,6 +87,14 @@
         <!-- 报告类型选择 -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button class="report-type-btn bg-orange-100 text-orange-700 p-4 rounded-lg hover:bg-orange-200 transition-colors text-center" data-tab="single">
+                    <i class="fas fa-file-download text-2xl mb-2"></i>
+                    <p class="font-medium">单次报告</p>
+                </button>
+                <button class="report-type-btn bg-purple-100 text-purple-700 p-4 rounded-lg hover:bg-purple-200 transition-colors text-center" data-tab="health">
+                    <i class="fas fa-file-alt text-2xl mb-2"></i>
+                    <p class="font-medium">健康评估</p>
+                </button>
                 <button class="report-type-btn bg-blue-100 text-blue-700 p-4 rounded-lg hover:bg-blue-200 transition-colors text-center" data-tab="comparison">
                     <i class="fas fa-file-medical text-2xl mb-2"></i>
                     <p class="font-medium">对比报告</p>
@@ -94,14 +102,6 @@
                 <button class="report-type-btn bg-green-100 text-green-700 p-4 rounded-lg hover:bg-green-200 transition-colors text-center" data-tab="treatment">
                     <i class="fas fa-chart-line text-2xl mb-2"></i>
                     <p class="font-medium">治疗总结</p>
-                </button>
-                <button class="report-type-btn bg-purple-100 text-purple-700 p-4 rounded-lg hover:bg-purple-200 transition-colors text-center" data-tab="health">
-                    <i class="fas fa-file-alt text-2xl mb-2"></i>
-                    <p class="font-medium">健康评估</p>
-                </button>
-                <button class="report-type-btn bg-orange-100 text-orange-700 p-4 rounded-lg hover:bg-orange-200 transition-colors text-center" data-tab="single">
-                    <i class="fas fa-file-download text-2xl mb-2"></i>
-                    <p class="font-medium">单次报告</p>
                 </button>
             </div>
         </div>
@@ -237,6 +237,49 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 治疗总结专用区域 -->
+                <div id="treatmentSummarySection" class="hidden">
+                    <div class="border-t pt-4">
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择干细胞治疗患者生成治疗总结</h4>
+                        <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-green-600 mr-2"></i>
+                                <span class="text-green-800 text-sm">治疗总结报告将基于患者的治疗档案、输注记录和疗效评估数据生成</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择干细胞治疗患者</label>
+                                <select id="treatmentPatientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                                    <option value="">请先选择检客</option>
+                                </select>
+                            </div>
+                            <div id="treatmentPatientInfo" class="hidden">
+                                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <span class="text-gray-500">患者编号：</span>
+                                            <span id="patientNumber" class="font-medium text-gray-800">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">主要诊断：</span>
+                                            <span id="patientDiagnosis" class="font-medium text-gray-800">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">输注次数：</span>
+                                            <span id="patientInfusionCount" class="font-medium text-blue-600">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">疗效评估：</span>
+                                            <span id="patientEffectivenessCount" class="font-medium text-green-600">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" id="clearReportForm" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                         <i class="fas fa-times mr-2"></i>清空
@@ -279,22 +322,30 @@
                 </button>
             </div>
             <div class="max-h-screen overflow-y-auto">
-                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+                <iframe id="departmentManagementFrame" data-src="department-management.html" class="w-full h-screen border-0"></iframe>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/notificationManager.js"></script>
-    <script src="js/reports.js"></script>
+    <!-- JavaScript - 使用 defer 异步加载优化性能 -->
+    <script src="config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/notificationManager.js" defer></script>
+    <script src="js/reports.js" defer></script>
     <script>
         // 显示科室管理弹出层
         function showDepartmentManagementModal() {
-            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            const modal = document.getElementById('departmentManagementModal');
+            const iframe = document.getElementById('departmentManagementFrame');
+            
+            // 延迟加载 iframe 内容
+            if (iframe && !iframe.src && iframe.dataset.src) {
+                iframe.src = iframe.dataset.src;
+            }
+            
+            modal.classList.remove('hidden');
             // 关闭用户菜单
             document.getElementById('userMenu').classList.add('hidden');
         }

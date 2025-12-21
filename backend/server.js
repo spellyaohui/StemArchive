@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression'); // 添加 gzip 压缩
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -106,6 +107,19 @@ const corsOptions = {
 };
 
 // 中间件
+// gzip 压缩 - 必须在其他中间件之前，大幅减少传输大小
+app.use(compression({
+    level: 6, // 压缩级别 1-9，6 是性能和压缩率的平衡点
+    threshold: 1024, // 只压缩大于 1KB 的响应
+    filter: (req, res) => {
+        // 压缩所有文本类型的响应
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        return compression.filter(req, res);
+    }
+}));
+
 app.use(helmet({
     contentSecurityPolicy: false, // 禁用 CSP 以允许内联脚本
     crossOriginEmbedderPolicy: false

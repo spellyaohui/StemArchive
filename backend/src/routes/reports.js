@@ -1506,4 +1506,464 @@ router.delete('/comparison/:id', async (req, res) => {
     }
 });
 
+// ==================== 治疗总结报告相关API ====================
+
+// 获取干细胞患者列表（用于治疗总结报告选择）
+router.get('/treatment-summary/patients', async (req, res) => {
+    try {
+        const { customerId } = req.query;
+
+        // 使用 LOWER 函数进行不区分大小写的比较
+        let whereClause = 'WHERE LOWER(sp.Status) = \'active\'';
+        let params = [];
+
+        if (customerId) {
+            whereClause += ' AND sp.CustomerID = @customerId';
+            params.push({ name: 'customerId', value: customerId, type: sql.UniqueIdentifier });
+        }
+
+        const query = `
+            SELECT 
+                sp.ID,
+                sp.CustomerID,
+                c.Name as CustomerName,
+                sp.PatientNumber,
+                sp.PrimaryDiagnosis,
+                sp.RegistrationDate,
+                sp.Status,
+                (SELECT COUNT(*) FROM InfusionSchedules WHERE PatientID = sp.ID) as InfusionCount,
+                (SELECT COUNT(*) FROM TreatmentEffectiveness WHERE PatientID = sp.ID AND LOWER(Status) = 'active') as EffectivenessCount
+            FROM StemCellPatients sp
+            INNER JOIN Customers c ON sp.CustomerID = c.ID
+            ${whereClause}
+            ORDER BY sp.CreatedAt DESC
+        `;
+
+        const result = await executeQuery(query, params);
+
+        res.json({
+            status: 'Success',
+            message: '获取干细胞患者列表成功',
+            data: result
+        });
+    } catch (error) {
+        console.error('获取干细胞患者列表失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '获取干细胞患者列表失败'
+        });
+    }
+});
+
+// 生成治疗总结报告
+router.post('/treatment-summary/generate', async (req, res) => {
+    try {
+        const { customerId, patientId } = req.body;
+
+        if (!customerId || !patientId) {
+            return res.status(400).json({
+                status: 'Error',
+                message: '缺少客户ID或患者ID'
+            });
+        }
+
+        // 检查API配置
+        if (!deepseekService.isConfigured()) {
+            return res.status(500).json({
+                status: 'Error',
+                message: 'DeepSeek API未配置，请联系管理员'
+            });
+        }
+
+        // 获取患者基本信息
+        const patientQuery = `
+            SELECT 
+                sp.ID,
+                sp.CustomerID,
+                c.Name as CustomerName,
+                c.Gender,
+                c.BirthDate,
+                sp.PatientNumber,
+                sp.PrimaryDiagnosis,
+                sp.RegistrationDate,
+                sp.Status,
+                sp.TreatmentPlan
+            FROM StemCellPatients sp
+            INNER JOIN Customers c ON sp.CustomerID = c.ID
+            WHERE sp.ID = @patientId AND sp.CustomerID = @customerId
+        `;
+
+        const patientResult = await executeQuery(patientQuery, [
+            { name: 'patientId', value: patientId, type: sql.UniqueIdentifier },
+            { name: 'customerId', value: customerId, type: sql.UniqueIdentifier }
+        ]);
+
+        if (patientResult.length === 0) {
+            return res.status(404).json({
+                status: 'Error',
+                message: '未找到患者信息'
+            });
+        }
+
+        const patient = patientResult[0];
+
+        // 计算年龄
+        let age = null;
+        if (patient.BirthDate) {
+            const birthDate = new Date(patient.BirthDate);
+            const today = new Date();
+            age = today.getFullYear() - birthDate.getFullYear();
+        }
+
+        // 获取输注记录
+        const infusionQuery = `
+            SELECT 
+                ID,
+                ScheduleDate,
+                InfusionCount,
+                TreatmentType,
+                Doctor,
+                Status,
+                Notes
+            FROM InfusionSchedules
+            WHERE PatientID = @patientId
+            ORDER BY ScheduleDate ASC
+        `;
+
+        const infusionResult = await executeQuery(infusionQuery, [
+            { name: 'patientId', value: patientId, type: sql.UniqueIdentifier }
+        ]);
+
+        // 获取疗效评估记录
+        const effectivenessQuery = `
+            SELECT 
+                ID,
+                AssessmentDate,
+                AssessmentPeriod,
+                EffectivenessType,
+                OverallEffectiveness,
+                SymptomImprovement,
+                QualityOfLifeImprovement,
+                DoctorAssessment,
+                PatientFeedback,
+                PatientSatisfaction,
+                SideEffects,
+                DoctorID
+            FROM TreatmentEffectiveness
+            WHERE PatientID = @patientId AND LOWER(Status) = 'active'
+            ORDER BY AssessmentDate ASC
+        `;
+
+        const effectivenessResult = await executeQuery(effectivenessQuery, [
+            { name: 'patientId', value: patientId, type: sql.UniqueIdentifier }
+        ]);
+
+        // 获取治疗历史（如果表存在）
+        let historyResult = [];
+        try {
+            const historyQuery = `
+                SELECT 
+                    EventDate as date,
+                    EventType as eventType,
+                    EventTitle as title,
+                    EventDescription as description,
+                    TreatmentResponse as response,
+                    AttendingDoctor as doctor,
+                    AdverseEvents as adverseEvents
+                FROM TreatmentHistory
+                WHERE PatientID = @patientId AND LOWER(Status) = 'active'
+                ORDER BY EventDate ASC
+            `;
+
+            historyResult = await executeQuery(historyQuery, [
+                { name: 'patientId', value: patientId, type: sql.UniqueIdentifier }
+            ]);
+        } catch (historyError) {
+            // TreatmentHistory 表可能不存在，忽略错误
+            console.log('TreatmentHistory 表查询失败，可能不存在:', historyError.message);
+        }
+
+        // 构建治疗数据
+        const treatmentData = {
+            customerName: patient.CustomerName,
+            patientNumber: patient.PatientNumber,
+            primaryDiagnosis: patient.PrimaryDiagnosis,
+            patientInfo: {
+                gender: patient.Gender,
+                age: age,
+                treatmentPlan: patient.TreatmentPlan,
+                registrationDate: patient.RegistrationDate ? new Date(patient.RegistrationDate).toLocaleDateString('zh-CN') : null,
+                status: patient.Status
+            },
+            infusionRecords: infusionResult.map(r => ({
+                scheduleDate: r.ScheduleDate ? new Date(r.ScheduleDate).toLocaleDateString('zh-CN') : null,
+                infusionCount: r.InfusionCount,
+                treatmentType: r.TreatmentType,
+                doctor: r.Doctor,
+                status: r.Status,
+                notes: r.Notes
+            })),
+            effectivenessRecords: effectivenessResult.map(r => ({
+                assessmentDate: r.AssessmentDate ? new Date(r.AssessmentDate).toLocaleDateString('zh-CN') : null,
+                assessmentPeriod: r.AssessmentPeriod,
+                effectivenessType: r.EffectivenessType,
+                overallEffectiveness: r.OverallEffectiveness,
+                symptomImprovement: r.SymptomImprovement,
+                qualityOfLifeImprovement: r.QualityOfLifeImprovement,
+                doctorAssessment: r.DoctorAssessment,
+                patientFeedback: r.PatientFeedback,
+                patientSatisfaction: r.PatientSatisfaction,
+                sideEffects: r.SideEffects,
+                doctorId: r.DoctorID
+            })),
+            treatmentHistory: historyResult
+        };
+
+        // 创建初始报告记录 - 先生成ID
+        const reportId = require('uuid').v4();
+        
+        const createReportQuery = `
+            INSERT INTO TreatmentSummaryReports (
+                ID, CustomerID, CustomerName, PatientID, PatientNumber, PrimaryDiagnosis,
+                TreatmentData, Status, CreatedBy, CreatedAt
+            )
+            VALUES (
+                @reportId, @customerId, @customerName, @patientId, @patientNumber, @primaryDiagnosis,
+                @treatmentData, 'processing', @createdBy, GETDATE()
+            )
+        `;
+
+        await executeQuery(createReportQuery, [
+            { name: 'reportId', value: reportId, type: sql.UniqueIdentifier },
+            { name: 'customerId', value: customerId, type: sql.UniqueIdentifier },
+            { name: 'customerName', value: patient.CustomerName, type: sql.NVarChar },
+            { name: 'patientId', value: patientId, type: sql.UniqueIdentifier },
+            { name: 'patientNumber', value: patient.PatientNumber, type: sql.NVarChar },
+            { name: 'primaryDiagnosis', value: patient.PrimaryDiagnosis, type: sql.NVarChar },
+            { name: 'treatmentData', value: JSON.stringify(treatmentData), type: sql.NVarChar },
+            { name: 'createdBy', value: req.user?.username || 'system', type: sql.NVarChar }
+        ]);
+
+        // 异步调用DeepSeek API生成治疗总结
+        setImmediate(async () => {
+            try {
+                const aiResult = await deepseekService.generateTreatmentSummary(treatmentData);
+
+                if (aiResult.success) {
+                    await executeQuery(`
+                        UPDATE TreatmentSummaryReports SET
+                            AIAnalysis = @aiAnalysis,
+                            MarkdownContent = @markdownContent,
+                            APIModel = @apiModel,
+                            APITokenCount = @apiTokenCount,
+                            ProcessingTime = @processingTime,
+                            Status = 'completed',
+                            UpdatedAt = GETDATE()
+                        WHERE ID = @id
+                    `, [
+                        { name: 'aiAnalysis', value: aiResult.aiAnalysis, type: sql.NVarChar },
+                        { name: 'markdownContent', value: aiResult.markdownContent, type: sql.NVarChar },
+                        { name: 'apiModel', value: aiResult.apiModel, type: sql.NVarChar },
+                        { name: 'apiTokenCount', value: aiResult.apiTokenCount, type: sql.Int },
+                        { name: 'processingTime', value: aiResult.processingTime, type: sql.Int },
+                        { name: 'id', value: reportId, type: sql.UniqueIdentifier }
+                    ]);
+                } else {
+                    await executeQuery(`
+                        UPDATE TreatmentSummaryReports SET
+                            Status = 'failed',
+                            ErrorMessage = @errorMessage,
+                            UpdatedAt = GETDATE()
+                        WHERE ID = @id
+                    `, [
+                        { name: 'errorMessage', value: aiResult.error, type: sql.NVarChar },
+                        { name: 'id', value: reportId, type: sql.UniqueIdentifier }
+                    ]);
+                }
+            } catch (error) {
+                console.error('异步生成治疗总结失败:', error);
+                await executeQuery(`
+                    UPDATE TreatmentSummaryReports SET
+                        Status = 'failed',
+                        ErrorMessage = @errorMessage,
+                        UpdatedAt = GETDATE()
+                    WHERE ID = @id
+                `, [
+                    { name: 'errorMessage', value: error.message, type: sql.NVarChar },
+                    { name: 'id', value: reportId, type: sql.UniqueIdentifier }
+                ]);
+            }
+        });
+
+        res.json({
+            status: 'Success',
+            message: '治疗总结报告生成已启动，请稍后查看结果',
+            data: {
+                reportId: reportId,
+                status: 'processing'
+            }
+        });
+
+    } catch (error) {
+        console.error('生成治疗总结报告失败:', error);
+        console.error('错误堆栈:', error.stack);
+        res.status(500).json({
+            status: 'Error',
+            message: '生成治疗总结报告失败: ' + error.message
+        });
+    }
+});
+
+// 获取治疗总结报告
+router.get('/treatment-summary/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const query = `
+            SELECT * FROM TreatmentSummaryReports WHERE ID = @id
+        `;
+
+        const result = await executeQuery(query, [
+            { name: 'id', value: id, type: sql.UniqueIdentifier }
+        ]);
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                status: 'Error',
+                message: '治疗总结报告不存在'
+            });
+        }
+
+        res.json({
+            status: 'Success',
+            message: '获取治疗总结报告成功',
+            data: result[0]
+        });
+    } catch (error) {
+        console.error('获取治疗总结报告失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '获取治疗总结报告失败'
+        });
+    }
+});
+
+// 获取客户的治疗总结报告列表
+router.get('/treatment-summary/customer/:customerId', async (req, res) => {
+    try {
+        const { customerId } = req.params;
+
+        const query = `
+            SELECT 
+                tsr.*,
+                sp.PatientNumber,
+                sp.PrimaryDiagnosis
+            FROM TreatmentSummaryReports tsr
+            LEFT JOIN StemCellPatients sp ON tsr.PatientID = sp.ID
+            WHERE tsr.CustomerID = @customerId AND tsr.Status = 'completed'
+            ORDER BY tsr.CreatedAt DESC
+        `;
+
+        const result = await executeQuery(query, [
+            { name: 'customerId', value: customerId, type: sql.UniqueIdentifier }
+        ]);
+
+        res.json({
+            status: 'Success',
+            message: '获取治疗总结报告列表成功',
+            data: result
+        });
+    } catch (error) {
+        console.error('获取治疗总结报告列表失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '获取治疗总结报告列表失败'
+        });
+    }
+});
+
+// 转换治疗总结报告为PDF
+router.post('/treatment-summary/:id/convert-pdf', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 获取报告
+        const query = `SELECT * FROM TreatmentSummaryReports WHERE ID = @id`;
+        const result = await executeQuery(query, [
+            { name: 'id', value: id, type: sql.UniqueIdentifier }
+        ]);
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                status: 'Error',
+                message: '治疗总结报告不存在'
+            });
+        }
+
+        const report = result[0];
+
+        if (report.Status !== 'completed' || !report.AIAnalysis) {
+            return res.status(400).json({
+                status: 'Error',
+                message: '报告尚未生成完成或内容为空'
+            });
+        }
+
+        // 调用PDF服务转换
+        const pdfResult = await pdfService.convertMarkdownToPdf(report.AIAnalysis);
+
+        if (pdfResult.success) {
+            res.json({
+                status: 'Success',
+                message: 'PDF转换成功',
+                data: {
+                    pdfData: pdfResult.pdfData,
+                    fileName: `${report.CustomerName}-治疗总结报告-${new Date().toISOString().split('T')[0]}.pdf`
+                }
+            });
+        } else {
+            res.status(500).json({
+                status: 'Error',
+                message: pdfResult.error || 'PDF转换失败'
+            });
+        }
+    } catch (error) {
+        console.error('转换治疗总结报告PDF失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '转换PDF失败'
+        });
+    }
+});
+
+// 删除治疗总结报告
+router.delete('/treatment-summary/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const query = `DELETE FROM TreatmentSummaryReports WHERE ID = @id`;
+        const result = await executeQuery(query, [
+            { name: 'id', value: id, type: sql.UniqueIdentifier }
+        ]);
+
+        if (result.rowsAffected && result.rowsAffected[0] === 0) {
+            return res.status(404).json({
+                status: 'Error',
+                message: '治疗总结报告不存在'
+            });
+        }
+
+        res.json({
+            status: 'Success',
+            message: '治疗总结报告删除成功'
+        });
+    } catch (error) {
+        console.error('删除治疗总结报告失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '删除治疗总结报告失败'
+        });
+    }
+});
+
 module.exports = router;

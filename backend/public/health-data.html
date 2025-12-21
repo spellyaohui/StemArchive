@@ -396,22 +396,30 @@
                 </button>
             </div>
             <div class="max-h-screen overflow-y-auto">
-                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+                <iframe id="departmentManagementFrame" data-src="department-management.html" class="w-full h-screen border-0"></iframe>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/customerLookup.js"></script>
+    <!-- JavaScript - 使用 defer 异步加载优化性能 -->
+    <script src="config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/customerLookup.js" defer></script>
 
     <script>
         // 显示科室管理弹出层
         function showDepartmentManagementModal() {
-            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            const modal = document.getElementById('departmentManagementModal');
+            const iframe = document.getElementById('departmentManagementFrame');
+            
+            // 延迟加载 iframe 内容
+            if (iframe && !iframe.src && iframe.dataset.src) {
+                iframe.src = iframe.dataset.src;
+            }
+            
+            modal.classList.remove('hidden');
             // 关闭用户菜单
             document.getElementById('userMenu').classList.add('hidden');
         }

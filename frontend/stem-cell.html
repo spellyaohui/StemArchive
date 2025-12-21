@@ -122,7 +122,8 @@
 
         <!-- 操作按钮 -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div class="flex flex-col space-y-4">
+                <!-- 第一行：操作按钮 -->
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                     <button id="createStemCellPatientBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-plus mr-2"></i>创建患者档案
@@ -137,16 +138,32 @@
                         <i class="fas fa-chart-line mr-2"></i>治疗效果评估
                     </button>
                 </div>
-                <div class="flex space-x-2">
-                    <input type="date" id="scheduleDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">所有状态</option>
-                        <option value="Active">治疗中</option>
-                        <option value="In Progress">进行中</option>
-                        <option value="Completed">已完成</option>
-                        <option value="Suspended">暂停</option>
-                        <option value="Inactive">未激活</option>
-                    </select>
+                <!-- 第二行：搜索和筛选 -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+                    <!-- 搜索框 -->
+                    <div class="flex-1 max-w-md">
+                        <div class="relative">
+                            <input type="text" id="patientSearchInput" 
+                                   placeholder="搜索姓名、患者编号、身份证号、诊断..." 
+                                   class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <button id="clearSearchBtn" class="hidden absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 筛选器 -->
+                    <div class="flex space-x-2">
+                        <input type="date" id="scheduleDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">所有状态</option>
+                            <option value="Active">治疗中</option>
+                            <option value="In Progress">进行中</option>
+                            <option value="Completed">已完成</option>
+                            <option value="Suspended">暂停</option>
+                            <option value="Inactive">未激活</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,7 +221,7 @@
                 </button>
             </div>
             <div class="max-h-screen overflow-y-auto">
-                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+                <iframe id="departmentManagementFrame" data-src="department-management.html" class="w-full h-screen border-0"></iframe>
             </div>
         </div>
     </div>
@@ -279,16 +296,23 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">治疗效果类型 <span class="text-red-500">*</span></label>
-                    <select id="effectivenessType" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">请选择治疗效果类型</option>
-                        <option value="显著改善">显著改善</option>
-                        <option value="改善">改善</option>
-                        <option value="稳定">稳定</option>
-                        <option value="恶化">恶化</option>
-                        <option value="无效">无效</option>
-                    </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">治疗效果类型 <span class="text-red-500">*</span></label>
+                        <select id="effectivenessType" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">请选择治疗效果类型</option>
+                            <option value="显著改善">显著改善</option>
+                            <option value="改善">改善</option>
+                            <option value="稳定">稳定</option>
+                            <option value="恶化">恶化</option>
+                            <option value="无效">无效</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">评估医生 <span class="text-red-500">*</span></label>
+                        <input type="text" id="doctorName" required placeholder="请输入医生姓名" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -350,16 +374,24 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/stem-cell.js"></script>
+    <!-- JavaScript - 使用 defer 异步加载优化性能 -->
+    <script src="config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/stem-cell.js" defer></script>
     <script>
         // 显示科室管理弹出层
         function showDepartmentManagementModal() {
-            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            const modal = document.getElementById('departmentManagementModal');
+            const iframe = document.getElementById('departmentManagementFrame');
+            
+            // 延迟加载 iframe 内容
+            if (iframe && !iframe.src && iframe.dataset.src) {
+                iframe.src = iframe.dataset.src;
+            }
+            
+            modal.classList.remove('hidden');
             // 关闭用户菜单
             document.getElementById('userMenu').classList.add('hidden');
         }
@@ -433,6 +465,7 @@
             const formData = new FormData(form);
 
             // 获取表单数据
+            const doctorNameValue = document.getElementById('doctorName').value;
             const data = {
                 customerId: window.currentEffectivenessCustomerId, // 从模态框加载时获取的客户ID
                 patientId: window.currentEffectivenessPatientId || document.getElementById('effectivenessPatientSelect').value,
@@ -448,12 +481,12 @@
                 sideEffects: document.getElementById('sideEffects').value || null,
                 treatmentAdjustment: document.getElementById('treatmentAdjustment').value || null,
                 nextAssessmentDate: document.getElementById('nextAssessmentDate').value || null,
-                doctorId: 'current_user' // 实际应用中应该是当前登录用户的ID
+                doctorId: doctorNameValue || null // 使用医生姓名
             };
 
             // 验证必填字段
-            if (!data.patientId || !data.assessmentDate || !data.assessmentPeriod || !data.effectivenessType) {
-                showNotification('请填写所有必填字段', 'warning');
+            if (!data.patientId || !data.assessmentDate || !data.assessmentPeriod || !data.effectivenessType || !doctorNameValue) {
+                showNotification('请填写所有必填字段（包括评估医生）', 'warning');
                 return;
             }
 

@@ -8,6 +8,7 @@ class Auth {
     this.token = localStorage.getItem('token');
     this.user = JSON.parse(localStorage.getItem('user') || '{}');
     this.isInitialized = false; // 防止重复初始化
+    this.isVerifying = false; // 防止重复验证
     this.menuState = null; // 菜单状态缓存
 
     // 如果已有用户信息，预设菜单状态
@@ -43,6 +44,12 @@ class Auth {
 
   // 验证token有效性
   async verifyToken() {
+    // 防止重复验证
+    if (this.isVerifying) {
+      return;
+    }
+    this.isVerifying = true;
+
     try {
       // 使用优化的API，防止重复验证请求
       let result;
@@ -83,6 +90,8 @@ class Auth {
     } catch (error) {
       console.error('Token验证失败:', error);
       this.logout();
+    } finally {
+      this.isVerifying = false;
     }
   }
 

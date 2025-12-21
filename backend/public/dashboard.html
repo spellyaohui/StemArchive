@@ -244,7 +244,7 @@
                 </button>
             </div>
             <div class="max-h-screen overflow-y-auto">
-                <iframe id="departmentManagementFrame" src="department-management.html" class="w-full h-screen border-0"></iframe>
+                <iframe id="departmentManagementFrame" data-src="department-management.html" class="w-full h-screen border-0"></iframe>
             </div>
         </div>
     </div>
@@ -263,7 +263,15 @@
     <script>
         // 显示科室管理弹出层
         function showDepartmentManagementModal() {
-            document.getElementById('departmentManagementModal').classList.remove('hidden');
+            const modal = document.getElementById('departmentManagementModal');
+            const iframe = document.getElementById('departmentManagementFrame');
+            
+            // 延迟加载 iframe 内容
+            if (iframe && !iframe.src && iframe.dataset.src) {
+                iframe.src = iframe.dataset.src;
+            }
+            
+            modal.classList.remove('hidden');
             // 关闭用户菜单
             document.getElementById('userMenu').classList.add('hidden');
         }

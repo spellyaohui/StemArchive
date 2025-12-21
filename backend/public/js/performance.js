@@ -91,13 +91,38 @@ class PerformanceOptimizer {
 
     // 添加页面加载性能监控
     addPageLoadMetrics() {
-        window.addEventListener('load', () => {
-            const loadTime = performance.now();
-            console.log(`📊 页面加载时间: ${loadTime.toFixed(2)}ms`);
+        // 使用 DOMContentLoaded 测量 DOM 解析完成时间（更准确反映页面可交互时间）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const domLoadTime = performance.now();
+                console.log(`📊 DOM 加载时间: ${domLoadTime.toFixed(2)}ms`);
+            });
+        }
 
-            // 如果加载时间过长，显示警告
-            if (loadTime > 2000) {
-                console.warn('⚠️ 页面加载时间较长，建议优化');
+        // 使用 load 事件测量完整页面加载时间（包括所有资源）
+        window.addEventListener('load', () => {
+            // 使用 Performance API 获取更准确的时间
+            const perfEntries = performance.getEntriesByType('navigation');
+            if (perfEntries.length > 0) {
+                const navEntry = perfEntries[0];
+                const domContentLoaded = navEntry.domContentLoadedEventEnd - navEntry.startTime;
+                const loadComplete = navEntry.loadEventEnd - navEntry.startTime;
+                
+                console.log(`📊 DOM 解析完成: ${domContentLoaded.toFixed(2)}ms`);
+                console.log(`📊 页面完全加载: ${loadComplete.toFixed(2)}ms`);
+                
+                // 只有当 DOM 解析时间过长时才警告
+                if (domContentLoaded > 2000) {
+                    console.warn('⚠️ DOM 解析时间较长，建议优化');
+                }
+            } else {
+                // 降级方案
+                const loadTime = performance.now();
+                console.log(`📊 页面加载时间: ${loadTime.toFixed(2)}ms`);
+                
+                if (loadTime > 2000) {
+                    console.warn('⚠️ 页面加载时间较长，建议优化');
+                }
             }
         });
     }

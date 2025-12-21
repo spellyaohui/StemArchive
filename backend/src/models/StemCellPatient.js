@@ -104,14 +104,15 @@ class StemCellPatient {
 
     if (search) {
       if (whereClause) {
-        whereClause += ' AND (c.Name LIKE @searchName OR sp.PatientNumber LIKE @searchNumber OR sp.PrimaryDiagnosis LIKE @searchDiagnosis)';
+        whereClause += ' AND (c.Name LIKE @searchName OR sp.PatientNumber LIKE @searchNumber OR sp.PrimaryDiagnosis LIKE @searchDiagnosis OR c.IdentityCard LIKE @searchIdCard)';
       } else {
-        whereClause = 'WHERE (c.Name LIKE @searchName OR sp.PatientNumber LIKE @searchNumber OR sp.PrimaryDiagnosis LIKE @searchDiagnosis)';
+        whereClause = 'WHERE (c.Name LIKE @searchName OR sp.PatientNumber LIKE @searchNumber OR sp.PrimaryDiagnosis LIKE @searchDiagnosis OR c.IdentityCard LIKE @searchIdCard)';
       }
       params.push(
         { name: 'searchName', value: `%${search}%`, type: sql.NVarChar },
         { name: 'searchNumber', value: `%${search}%`, type: sql.NVarChar },
-        { name: 'searchDiagnosis', value: `%${search}%`, type: sql.NVarChar }
+        { name: 'searchDiagnosis', value: `%${search}%`, type: sql.NVarChar },
+        { name: 'searchIdCard', value: `%${search}%`, type: sql.NVarChar }
       );
     }
 
@@ -122,7 +123,15 @@ class StemCellPatient {
         c.Gender,
         c.Age,
         c.Phone,
-        c.IdentityCard
+        c.IdentityCard,
+        -- 从输注排期获取首次治疗日期
+        (SELECT MIN(ScheduleDate) FROM InfusionSchedules WHERE PatientID = sp.ID AND Status = 'Completed') as first_treatment,
+        -- 从输注排期获取最近治疗日期
+        (SELECT MAX(ScheduleDate) FROM InfusionSchedules WHERE PatientID = sp.ID AND Status = 'Completed') as last_treatment,
+        -- 从输注排期获取最近的治疗医生
+        (SELECT TOP 1 Doctor FROM InfusionSchedules WHERE PatientID = sp.ID AND Status = 'Completed' ORDER BY ScheduleDate DESC) as doctor,
+        -- 获取下次排期
+        (SELECT TOP 1 ScheduleDate FROM InfusionSchedules WHERE PatientID = sp.ID AND Status = 'Scheduled' AND ScheduleDate >= GETDATE() ORDER BY ScheduleDate ASC) as next_schedule
       FROM StemCellPatients sp
       INNER JOIN Customers c ON sp.CustomerID = c.ID
       ${whereClause}

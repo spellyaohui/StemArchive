@@ -197,8 +197,9 @@ class OptimizedAPI {
         );
     }
 
-    // 令牌验证 - 不缓存，但防止重复请求
+    // 令牌验证 - 短期缓存，防止页面加载时重复验证
     async verifyToken(token) {
+        const ttl = 10 * 1000; // 10秒缓存，足够页面初始化完成
         const apiUrl = `${window.CONFIG?.api?.baseURL || '/api'}/auth/verify`;
         return await this.cache.cachedFetch(
             apiUrl,
@@ -208,7 +209,7 @@ class OptimizedAPI {
                     'Authorization': `Bearer ${token}`
                 }
             },
-            0 // 不缓存
+            ttl
         );
     }
 

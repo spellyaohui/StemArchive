@@ -85,13 +85,32 @@ class AuthService {
 
     /**
      * 验证令牌
+     * 优化：直接使用 JWT 中的用户信息，避免每次都查询数据库
      */
     static async verifyToken(token) {
         try {
             // 验证令牌有效性
             const decoded = JwtUtils.verifyToken(token);
 
-            // 查找用户
+            // 优化：直接使用 JWT 中的用户信息，避免数据库查询
+            // JWT 中已经包含了 id, username, name, role 等信息
+            if (decoded.id && decoded.username && decoded.role) {
+                return {
+                    success: true,
+                    message: '令牌有效',
+                    data: {
+                        user: {
+                            id: decoded.id,
+                            username: decoded.username,
+                            name: decoded.name || decoded.username,
+                            email: decoded.email || null,
+                            role: decoded.role
+                        }
+                    }
+                };
+            }
+
+            // 降级：如果 JWT 中信息不完整，才查询数据库
             const user = await User.findById(decoded.id);
             if (!user || user.status !== 'active') {
                 throw new Error('用户不存在或已被禁用');
