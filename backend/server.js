@@ -140,6 +140,7 @@ app.use('/api/disease-types', require('./src/routes/diseaseTypes'));
 app.use('/api/treatment-types', require('./src/routes/treatmentTypes'));
 app.use('/api/treatment-effectiveness', require('./src/routes/treatment-effectiveness'));
 app.use('/api/treatment-history', require('./src/routes/treatment-history'));
+app.use('/api/examination-import', require('./src/routes/examinationImport'));
 
 // 体检日期获取API - 统一接口
 app.post('/api/get_tjrq', async (req, res) => {

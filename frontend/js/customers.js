@@ -203,14 +203,17 @@ class CustomersManager {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="customersManager.viewCustomer('${customer.ID}')" class="text-blue-600 hover:text-blue-900 mr-3">
-                        <i class="fas fa-eye"></i> 查看
+                    <button onclick="customersManager.viewCustomer('${customer.ID}')" class="text-blue-600 hover:text-blue-900 mr-2" title="查看详情">
+                        <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="customersManager.editCustomer('${customer.ID}')" class="text-green-600 hover:text-green-900 mr-3">
-                        <i class="fas fa-edit"></i> 编辑
+                    <button onclick="customersManager.editCustomer('${customer.ID}')" class="text-green-600 hover:text-green-900 mr-2" title="编辑">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="customersManager.deleteCustomer('${customer.ID}')" class="text-red-600 hover:text-red-900">
-                        <i class="fas fa-trash"></i> 删除
+                    <button onclick="customersManager.fetchExaminationData('${customer.ID}', '${customer.IdentityCard || customer.identityCard || customer.id_card}')" class="text-purple-600 hover:text-purple-900 mr-2" title="获取体检数据">
+                        <i class="fas fa-file-medical"></i>
+                    </button>
+                    <button onclick="customersManager.deleteCustomer('${customer.ID}')" class="text-red-600 hover:text-red-900" title="删除">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
@@ -737,6 +740,341 @@ class CustomersManager {
       importBtn.addEventListener('click', () => {
         NotificationHelper.tip('批量导入功能正在开发中，敬请期待', '功能提示');
       });
+    }
+  }
+
+  /**
+   * 获取体检数据
+   * @param {string} customerId - 客户ID
+   * @param {string} identityCard - 身份证号
+   */
+  async fetchExaminationData(customerId, identityCard) {
+    if (!identityCard) {
+      NotificationHelper.warning('该客户没有身份证号，无法获取体检数据', '缺少身份证号');
+      return;
+    }
+
+    // 显示加载提示
+    const loadingNotification = NotificationHelper.loading('正在获取体检记录列表，请稍候...');
+
+    try {
+      // 1. 获取体检ID列表
+      const examIdsResult = await window.API.examinationImport.getExamIds(identityCard);
+      
+      if (loadingNotification) {
+        loadingNotification.remove();
+      }
+
+      if (examIdsResult.status !== 'Success' || !examIdsResult.data || examIdsResult.data.length === 0) {
+        NotificationHelper.warning('未找到该身份证号对应的体检记录', '无体检记录');
+        return;
+      }
+
+      const examIds = examIdsResult.data;
+      console.log(`📋 找到 ${examIds.length} 条体检记录`);
+
+      // 2. 显示体检记录选择对话框
+      this.showExaminationSelectModal(customerId, identityCard, examIds);
+
+    } catch (error) {
+      if (loadingNotification) {
+        loadingNotification.remove();
+      }
+      console.error('获取体检记录失败:', error);
+      NotificationHelper.error('获取体检记录失败: ' + error.message, '获取失败');
+    }
+  }
+
+  /**
+   * 显示体检记录选择对话框
+   * @param {string} customerId - 客户ID
+   * @param {string} identityCard - 身份证号
+   * @param {Array} examIds - 体检ID列表
+   */
+  async showExaminationSelectModal(customerId, identityCard, examIds) {
+    const modalContainer = document.getElementById('modalContainer');
+    if (!modalContainer) return;
+
+    // 显示加载中的模态框
+    modalContainer.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">
+              <i class="fas fa-file-medical text-purple-600 mr-2"></i>获取体检数据
+            </h3>
+            <button onclick="customersManager.closeModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <div class="p-6">
+            <div class="flex items-center justify-center py-8">
+              <i class="fas fa-spinner fa-spin text-3xl text-purple-600 mr-3"></i>
+              <span class="text-gray-600">正在加载体检记录详情...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      // 获取体检预览信息
+      const previewResult = await window.API.examinationImport.getPreviewBatch(examIds);
+      const previews = previewResult.status === 'Success' ? previewResult.data : [];
+
+      // 更新模态框内容
+      modalContainer.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 class="text-lg font-medium text-gray-900">
+                <i class="fas fa-file-medical text-purple-600 mr-2"></i>获取体检数据
+              </h3>
+              <button onclick="customersManager.closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            <div class="p-6">
+              <div class="mb-4">
+                <p class="text-gray-600 mb-2">
+                  <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                  找到 <span class="font-bold text-purple-600">${examIds.length}</span> 条体检记录，请选择要导入的记录：
+                </p>
+                <div class="flex items-center space-x-4 mb-4">
+                  <label class="flex items-center">
+                    <input type="checkbox" id="selectAllExams" class="mr-2 h-4 w-4 text-purple-600 rounded">
+                    <span class="text-sm text-gray-700">全选</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="space-y-3 max-h-96 overflow-y-auto" id="examListContainer">
+                ${previews.map((preview, index) => `
+                  <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-start">
+                      <input type="checkbox" name="examId" value="${preview.examId}" 
+                             class="exam-checkbox mt-1 mr-3 h-4 w-4 text-purple-600 rounded">
+                      <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                          <span class="font-medium text-gray-900">
+                            <i class="fas fa-clipboard-list text-purple-500 mr-1"></i>
+                            体检ID: ${preview.examId}
+                          </span>
+                          <span class="text-sm text-gray-500">
+                            ${preview.examDate ? `<i class="fas fa-calendar-alt mr-1"></i>${preview.examDate}` : '日期未知'}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          ${preview.departments.map(dept => `
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              dept.exists 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-500'
+                            }">
+                              ${dept.exists ? '<i class="fas fa-check-circle mr-1"></i>' : '<i class="fas fa-question-circle mr-1"></i>'}
+                              ${dept.code} (${dept.name})
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">
+                  <i class="fas fa-info-circle text-blue-500 mr-1"></i>说明
+                </h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>绿色</span> 表示系统中存在该科室，可以导入数据</li>
+                  <li><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500"><i class="fas fa-question-circle mr-1"></i>灰色</span> 表示系统中不存在该科室，将自动跳过</li>
+                  <li>如果某科室无检查数据（医师误操作），也会自动跳过</li>
+                </ul>
+              </div>
+
+              <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="customersManager.closeModal()" 
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                  取消
+                </button>
+                <button onclick="customersManager.startImportExamination('${customerId}', '${identityCard}')" 
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                  <i class="fas fa-download mr-2"></i>开始导入
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 绑定全选事件
+      const selectAllCheckbox = document.getElementById('selectAllExams');
+      if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+          const checkboxes = document.querySelectorAll('.exam-checkbox');
+          checkboxes.forEach(cb => cb.checked = e.target.checked);
+        });
+      }
+
+    } catch (error) {
+      console.error('加载体检预览信息失败:', error);
+      modalContainer.innerHTML = '';
+      NotificationHelper.error('加载体检预览信息失败: ' + error.message, '加载失败');
+    }
+  }
+
+  /**
+   * 开始导入体检数据
+   * @param {string} customerId - 客户ID
+   * @param {string} identityCard - 身份证号
+   */
+  async startImportExamination(customerId, identityCard) {
+    // 获取选中的体检ID
+    const checkboxes = document.querySelectorAll('.exam-checkbox:checked');
+    const selectedExamIds = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedExamIds.length === 0) {
+      NotificationHelper.warning('请至少选择一条体检记录', '未选择记录');
+      return;
+    }
+
+    // 关闭选择对话框
+    this.closeModal();
+
+    // 显示导入进度对话框
+    this.showImportProgressModal(customerId, identityCard, selectedExamIds);
+  }
+
+  /**
+   * 显示导入进度对话框
+   * @param {string} customerId - 客户ID
+   * @param {string} identityCard - 身份证号
+   * @param {Array} selectedExamIds - 选中的体检ID列表
+   */
+  async showImportProgressModal(customerId, identityCard, selectedExamIds) {
+    const modalContainer = document.getElementById('modalContainer');
+    if (!modalContainer) return;
+
+    // 显示进度模态框
+    modalContainer.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-2xl">
+          <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+              <i class="fas fa-spinner fa-spin text-purple-600 mr-2"></i>正在导入体检数据
+            </h3>
+          </div>
+          <div class="p-6">
+            <div class="mb-4">
+              <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <span>导入进度</span>
+                <span id="importProgress">0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="importProgressBar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+            <div id="importLog" class="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto text-sm font-mono">
+              <div class="text-gray-600">开始导入...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const logContainer = document.getElementById('importLog');
+    const progressBar = document.getElementById('importProgressBar');
+    const progressText = document.getElementById('importProgress');
+
+    const addLog = (message, type = 'info') => {
+      const colors = {
+        info: 'text-gray-600',
+        success: 'text-green-600',
+        warning: 'text-yellow-600',
+        error: 'text-red-600'
+      };
+      const icons = {
+        info: 'fa-info-circle',
+        success: 'fa-check-circle',
+        warning: 'fa-exclamation-triangle',
+        error: 'fa-times-circle'
+      };
+      logContainer.innerHTML += `
+        <div class="${colors[type]}">
+          <i class="fas ${icons[type]} mr-1"></i>${message}
+        </div>
+      `;
+      logContainer.scrollTop = logContainer.scrollHeight;
+    };
+
+    try {
+      addLog(`准备导入 ${selectedExamIds.length} 条体检记录...`);
+
+      // 调用导入API
+      const result = await window.API.examinationImport.importData(identityCard, customerId, selectedExamIds);
+
+      // 更新进度到100%
+      progressBar.style.width = '100%';
+      progressText.textContent = '100%';
+
+      if (result.status === 'Success') {
+        const data = result.data;
+        
+        // 显示详细日志
+        addLog(`处理了 ${data.processedExamIds} 个体检记录`, 'success');
+        
+        if (data.departments.processed.length > 0) {
+          addLog(`✅ 成功导入 ${data.departments.processed.length} 个科室数据`, 'success');
+          data.departments.processed.forEach(item => {
+            addLog(`  - ${item.departmentName}: ${item.dataCount} 条记录`, 'success');
+          });
+        }
+        
+        if (data.departments.skipped.length > 0) {
+          addLog(`⚠️ 跳过 ${data.departments.skipped.length} 个未知科室`, 'warning');
+          data.departments.skipped.forEach(item => {
+            addLog(`  - ${item.code}: ${item.reason}`, 'warning');
+          });
+        }
+        
+        if (data.departments.empty.length > 0) {
+          addLog(`ℹ️ ${data.departments.empty.length} 个科室无数据`, 'info');
+          data.departments.empty.forEach(item => {
+            addLog(`  - ${item.departmentName}: ${item.reason}`, 'info');
+          });
+        }
+        
+        if (data.departments.failed.length > 0) {
+          addLog(`❌ ${data.departments.failed.length} 个科室导入失败`, 'error');
+          data.departments.failed.forEach(item => {
+            addLog(`  - ${item.code}: ${item.error}`, 'error');
+          });
+        }
+
+        addLog('导入完成！', 'success');
+
+        // 3秒后关闭对话框
+        setTimeout(() => {
+          this.closeModal();
+          NotificationHelper.success(result.message, '导入完成');
+        }, 3000);
+
+      } else {
+        addLog(`导入失败: ${result.message}`, 'error');
+        setTimeout(() => {
+          this.closeModal();
+          NotificationHelper.error(result.message, '导入失败');
+        }, 3000);
+      }
+
+    } catch (error) {
+      console.error('导入体检数据失败:', error);
+      addLog(`导入失败: ${error.message}`, 'error');
+      setTimeout(() => {
+        this.closeModal();
+        NotificationHelper.error('导入体检数据失败: ' + error.message, '导入失败');
+      }, 3000);
     }
   }
 }

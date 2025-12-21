@@ -663,6 +663,46 @@ const TreatmentEffectivenessAPI = {
   }
 };
 
+// 体检数据导入API
+const ExaminationImportAPI = {
+  // 根据身份证号获取体检ID列表
+  async getExamIds(identityCard) {
+    return await apiService.get(`/examination-import/exam-ids/${identityCard}`);
+  },
+
+  // 根据体检ID获取科室编码列表
+  async getDepartmentCodes(examId) {
+    return await apiService.get(`/examination-import/department-codes/${examId}`);
+  },
+
+  // 获取体检预览信息
+  async getPreview(examId) {
+    return await apiService.get(`/examination-import/preview/${examId}`);
+  },
+
+  // 批量获取体检预览信息
+  async getPreviewBatch(examIds) {
+    return await apiService.post('/examination-import/preview-batch', { examIds });
+  },
+
+  // 导入体检数据
+  async importData(identityCard, customerId, selectedExamIds = null) {
+    return await apiService.post('/examination-import/import', {
+      identityCard,
+      customerId,
+      selectedExamIds
+    });
+  },
+
+  // 导入单个体检记录
+  async importSingle(examId, customerId) {
+    return await apiService.post('/examination-import/import-single', {
+      examId,
+      customerId
+    });
+  }
+};
+
 // 导出API服务
 window.API = {
   customer: CustomerAPI,
@@ -679,6 +719,7 @@ window.API = {
   person: PersonAPI,
   upload: UploadAPI,
   treatmentEffectiveness: TreatmentEffectivenessAPI,
+  examinationImport: ExaminationImportAPI,
   service: apiService
 };
 

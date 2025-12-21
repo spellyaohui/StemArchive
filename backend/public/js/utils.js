@@ -365,33 +365,31 @@ class Utils {
 
 // 显示通知（增强版，兼容旧版本调用）
 function showNotification(messageOrType, typeOrMessage, durationOrOptions = 3000, options = {}) {
-    // 判断是否是旧版本调用方式：showNotification(type, message)
-    const isOldStyle = typeof messageOrType === 'string' && typeof typeOrMessage === 'string' &&
-        ['success', 'error', 'warning', 'info'].includes(messageOrType);
-    
-    let message, type, duration, finalOptions;
-    
-    if (isOldStyle) {
-        // 旧版本调用方式：showNotification(type, message)
-        type = messageOrType;
-        message = typeOrMessage;
-        duration = typeof durationOrOptions === 'number' ? durationOrOptions : 3000;
-        finalOptions = typeof durationOrOptions === 'object' ? durationOrOptions : options;
-    } else {
-        // 新版本调用方式：showNotification(message, type)
-        message = messageOrType;
-        type = typeOrMessage || 'info';
-        duration = typeof durationOrOptions === 'number' ? durationOrOptions : 3000;
-        finalOptions = typeof durationOrOptions === 'object' ? durationOrOptions : options;
-    }
-
     // 如果新的通知管理器可用，优先使用
     if (window.notificationManager) {
-        return window.notificationManager.create(message, type, duration, finalOptions);
+        // 兼容旧版本调用：showNotification(type, message)
+        if (typeof messageOrType === 'string' && typeof typeOrMessage === 'string' &&
+            ['success', 'error', 'warning', 'info'].includes(messageOrType)) {
+            // 这是旧版本调用方式
+            const type = messageOrType;
+            const message = typeOrMessage;
+            const duration = typeof durationOrOptions === 'number' ? durationOrOptions : 3000;
+            const finalOptions = typeof durationOrOptions === 'object' ? durationOrOptions : options;
+
+            return window.notificationManager.create(message, type, duration, finalOptions);
+        } else {
+            // 这是新版本调用方式
+            const message = messageOrType;
+            const type = typeOrMessage || 'info';
+            const duration = typeof durationOrOptions === 'number' ? durationOrOptions : 3000;
+            const finalOptions = typeof durationOrOptions === 'object' ? durationOrOptions : options;
+
+            return window.notificationManager.create(message, type, duration, finalOptions);
+        }
     }
 
-    // 回退到原始实现（参数顺序：message, type）
-    return createNotification(message, type, duration, finalOptions);
+    // 回退到原始实现
+    return createNotification(messageOrType, typeOrMessage, durationOrOptions, options);
 }
 
 // 创建通知的核心函数
