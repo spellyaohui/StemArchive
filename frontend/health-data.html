@@ -981,8 +981,6 @@
                 return;
             }
 
-            showNotification('info', '正在获取体检ID列表...');
-
             try {
                 // 调用第三方API获取体检ID列表
                 const examIdsUrl = `${window.EXAMINATION_API_CONFIG.baseURL}/examination-ids/${identityCard}`;
@@ -998,10 +996,12 @@
 
                 const result = await response.json();
 
-                if (result.code === 200 && result.data) {
+                if (result.code === 200 && result.data && result.data.length > 0) {
+                    // 成功获取到体检ID列表
+                    showNotification('success', `查询到 ${result.data.length} 条体检记录，请选择`);
                     await showExaminationIdSelectionModal(result.data, identityCard, selectedDepartment);
                 } else {
-                    showNotification(result.message || '未查询到体检ID列表', 'warning');
+                    showNotification('warning', result.message || '该检客暂无体检记录');
                 }
 
             } catch (error) {
@@ -1233,8 +1233,8 @@
             // 关闭模态框
             closeExaminationIdSelectionModal();
 
-            // 显示成功提示
-            showNotification('success', `已选择体检ID: ${examId}`);
+            // 显示选择成功提示
+            showNotification('success', `体检ID已填入: ${examId}`);
 
             // 更新调阅按钮状态
             updateLookupExamButton();
