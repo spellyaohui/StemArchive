@@ -659,7 +659,7 @@ router.post('/health-assessment/generate',
                 { name: 'medicalExamId', value: medicalExamId, type: sql.NVarChar }
             ]);
 
-            // 获取检验科数据
+            // 获取检验科数据（包含 CheckDate 用于正确设置体检日期）
             const labDataResponse = await executeQuery(`
                 SELECT
                     TestCategory,
@@ -667,7 +667,8 @@ router.post('/health-assessment/generate',
                     ItemResult,
                     ItemUnit,
                     ReferenceValue,
-                    AbnormalFlag
+                    AbnormalFlag,
+                    CheckDate
                 FROM LaboratoryData
                 WHERE CustomerID = @customerId
                 AND ExamId = @medicalExamId
@@ -726,7 +727,10 @@ router.post('/health-assessment/generate',
 
                 departments.push({
                     department: '检验科',
-                    assessmentDate: examDetailResponse.length > 0 ? examDetailResponse[0].AssessmentDate : new Date().toISOString().split('T')[0],
+                    // 优先使用 HealthAssessments 日期，其次使用 LaboratoryData 的 CheckDate，最后才用当前日期
+                    assessmentDate: examDetailResponse.length > 0 
+                        ? examDetailResponse[0].AssessmentDate 
+                        : (labDataResponse[0]?.CheckDate || new Date().toISOString().split('T')[0]),
                     doctor: null,
                     assessmentData: JSON.stringify(labAssessmentData),
                     summary: '检验科评估 - 包含血常规、生化等检查项目'
@@ -774,7 +778,8 @@ router.post('/health-assessment/generate',
             const healthData = {
                 customerName: customerName,
                 medicalExamId: medicalExamId,
-                examDate: departments[0]?.assessmentDate || new Date().toISOString().split('T')[0],
+                // 优先使用 departments 中的日期，其次使用 LaboratoryData 的 CheckDate
+                examDate: departments[0]?.assessmentDate || labDataResponse[0]?.CheckDate || new Date().toISOString().split('T')[0],
                 departments: departments
             };
 
@@ -1101,7 +1106,7 @@ router.post('/comparison/generate',
                     { name: 'examId', value: examId, type: sql.NVarChar }
                 ]);
 
-                // 获取检验科数据
+                // 获取检验科数据（包含 CheckDate 用于正确设置体检日期）
                 const labDataResponse = await executeQuery(`
                     SELECT
                         TestCategory,
@@ -1109,7 +1114,8 @@ router.post('/comparison/generate',
                         ItemResult,
                         ItemUnit,
                         ReferenceValue,
-                        AbnormalFlag
+                        AbnormalFlag,
+                        CheckDate
                     FROM LaboratoryData
                     WHERE CustomerID = @customerId
                     AND ExamId = @examId
@@ -1168,7 +1174,10 @@ router.post('/comparison/generate',
 
                     departments.push({
                         department: '检验科',
-                        assessmentDate: examDetailResponse.length > 0 ? examDetailResponse[0].AssessmentDate : new Date().toISOString().split('T')[0],
+                        // 优先使用 HealthAssessments 日期，其次使用 LaboratoryData 的 CheckDate，最后才用当前日期
+                        assessmentDate: examDetailResponse.length > 0 
+                            ? examDetailResponse[0].AssessmentDate 
+                            : (labDataResponse[0]?.CheckDate || new Date().toISOString().split('T')[0]),
                         doctor: null,
                         assessmentData: JSON.stringify(labAssessmentData),
                         summary: '检验科评估 - 包含血常规、生化等检查项目'
@@ -1204,7 +1213,8 @@ router.post('/comparison/generate',
 
                 exams.push({
                     medicalExamId: examId,
-                    examDate: departments[0]?.assessmentDate || new Date().toISOString().split('T')[0],
+                    // 优先使用 departments 中的日期，其次使用 LaboratoryData 的 CheckDate
+                    examDate: departments[0]?.assessmentDate || labDataResponse[0]?.CheckDate || new Date().toISOString().split('T')[0],
                     customerName: customerName,
                     departments: departments
                 });
