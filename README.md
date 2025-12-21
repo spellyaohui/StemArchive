@@ -1,6 +1,8 @@
-# 干细胞治疗档案管理系统
+# 干细胞治疗档案管理系统 (StemArchive)
 
 一个现代化的干细胞治疗档案管理系统，用于管理患者信息、健康数据、治疗方案和输注排期。
+
+**项目地址**: [https://github.com/spellyaohui/StemArchive](https://github.com/spellyaohui/StemArchive)
 
 ## 系统功能
 
@@ -56,8 +58,8 @@
 
 #### 1. 克隆项目
 ```bash
-git clone <repository-url>
-cd 健康管理系统
+git clone https://github.com/spellyaohui/StemArchive.git
+cd StemArchive
 ```
 
 #### 2. 安装后端依赖
@@ -105,7 +107,7 @@ npm run dev
 cd frontend
 npx http-server -p 8080
 ```
-- 后端 API: http://localhost:3000/api
+- 后端 API: http://localhost:5000/api
 - 前端页面: http://localhost:8080
 
 #### 6. 访问系统
@@ -115,7 +117,7 @@ npx http-server -p 8080
 ## 项目结构
 
 ```
-干细胞档案管理系统/
+StemArchive/
 ├── backend/                 # 后端代码
 │   ├── public/             # 前端静态文件（构建后生成）
 │   │   ├── css/            # 样式文件
@@ -292,10 +294,11 @@ cd frontend
 ```
 
 ### 贡献指南
-1. Fork项目
-2. 创建功能分支
-3. 提交代码
-4. 创建Pull Request
+1. Fork 项目：[https://github.com/spellyaohui/StemArchive/fork](https://github.com/spellyaohui/StemArchive/fork)
+2. 创建功能分支：`git checkout -b feature/your-feature`
+3. 提交代码：`git commit -am 'Add some feature'`
+4. 推送分支：`git push origin feature/your-feature`
+5. 创建 Pull Request
 
 ## 常见问题
 
@@ -387,7 +390,11 @@ A: 网页显示使用格式化的 `MarkdownContent` 字段，PDF转换使用纯A
 
 ## 技术支持
 
-如有问题或建议，请联系开发团队。
+- **项目地址**: [https://github.com/spellyaohui/StemArchive](https://github.com/spellyaohui/StemArchive)
+- **问题反馈**: [Issues](https://github.com/spellyaohui/StemArchive/issues)
+- **功能建议**: [Discussions](https://github.com/spellyaohui/StemArchive/discussions)
+
+如有问题或建议，请通过 GitHub Issues 联系开发团队。
 
 ## 许可证
 

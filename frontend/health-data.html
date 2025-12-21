@@ -311,7 +311,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">检查日期 <span class="text-red-500">*</span></label>
-                            <input type="date" id="examDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" id="imagingExamDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">医生 <span class="text-red-500">*</span></label>
@@ -764,10 +764,32 @@
                             console.log(`  ${index + 1}. 组合项目: ${item.SFXMMC}, 子项目: ${item.XXMC}, 结果: ${item.ItemResult}, 单位: "${item.ItemUnit}"`,
                                            `检查日期: ${item.CheckDate}, 医生: ${item.Doctor}, 状态标记: ${item.Flag}`);
                         });
-                        console.log('📅 检验日期(tjrq):', result.tjrq);
+
+                        // 调用本地API获取体检日期
+                        let examDate = null;
+                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
+                        try {
+                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ studyId: examId })
+                            });
+                            const dateResult = await dateResponse.json();
+                            if (dateResult.code === 200 && dateResult.data) {
+                                examDate = dateResult.data;
+                                console.log('✅ 获取到检验科体检日期:', examDate);
+                            } else {
+                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
+                            }
+                        } catch (dateError) {
+                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        }
 
                         // 将数据和检验日期一起填充到表单中
-                        fillLaboratoryDataForm(result.data, result.tjrq);
+                        fillLaboratoryDataForm(result.data, examDate);
                     } else {
                         NotificationHelper.warning(result.message || '该体检ID未找到对应的检验数据，请检查体检ID是否正确', '数据未找到');
                     }
@@ -807,8 +829,31 @@
                             }
                         }
 
-                        // 将数据填充到常规科室表单中
-                        fillGeneralDepartmentForm(result.data);
+                        // 调用本地API获取体检日期
+                        let examDate = null;
+                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
+                        try {
+                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ studyId: examId })
+                            });
+                            const dateResult = await dateResponse.json();
+                            if (dateResult.code === 200 && dateResult.data) {
+                                examDate = dateResult.data;
+                                console.log('✅ 获取到常规科室体检日期:', examDate);
+                            } else {
+                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
+                            }
+                        } catch (dateError) {
+                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        }
+
+                        // 将数据和体检日期填充到常规科室表单中
+                        fillGeneralDepartmentForm(result.data, examDate);
                     } else {
                         NotificationHelper.warning(result.message || '该体检ID未找到对应的常规科室数据，请检查体检ID是否正确', '数据未找到');
                     }
@@ -825,10 +870,32 @@
                             console.log(`    - 检查描述长度: ${item['检查描述'] ? item['检查描述'].length : 0} 字符`);
                             console.log(`    - 检查结论长度: ${item['检查结论'] ? item['检查结论'].length : 0} 字符`);
                         });
-                        console.log('📅 体检日期(tjrq):', result.tjrq);
+
+                        // 调用本地API获取体检日期
+                        let examDate = null;
+                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
+                        try {
+                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ studyId: examId })
+                            });
+                            const dateResult = await dateResponse.json();
+                            if (dateResult.code === 200 && dateResult.data) {
+                                examDate = dateResult.data;
+                                console.log('✅ 获取到影像科室体检日期:', examDate);
+                            } else {
+                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
+                            }
+                        } catch (dateError) {
+                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        }
 
                         // 将数据填充到影像科室表单中
-                        fillImagingDepartmentForm(result.data, result.tjrq);
+                        fillImagingDepartmentForm(result.data, examDate);
                     } else {
                         NotificationHelper.warning(result.message || '该体检ID未找到对应的影像科室数据，请检查体检ID是否正确', '数据未找到');
                     }
@@ -843,10 +910,32 @@
                         result.data.forEach((item, index) => {
                             console.log(`  ${index + 1}. StudyID: ${item.StudyID}, 检查结果: ${item['检查结果']}`);
                         });
-                        console.log('📅 体检日期(tjrq):', result.tjrq);
+
+                        // 调用本地API获取体检日期
+                        let examDate = null;
+                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
+                        try {
+                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ studyId: examId })
+                            });
+                            const dateResult = await dateResponse.json();
+                            if (dateResult.code === 200 && dateResult.data) {
+                                examDate = dateResult.data;
+                                console.log('✅ 获取到仪器室体检日期:', examDate);
+                            } else {
+                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
+                            }
+                        } catch (dateError) {
+                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        }
 
                         // 将数据填充到仪器室表单中
-                        fillInstrumentRoomForm(result.data, result.tjrq);
+                        fillInstrumentRoomForm(result.data, examDate);
                     } else {
                         NotificationHelper.warning(result.message || '该体检ID未找到对应的仪器室数据，请检查体检ID是否正确', '数据未找到');
                     }
@@ -1091,12 +1180,12 @@
 
             if (isExisting) {
                 validationElement.innerHTML = `
-                    <span class="text-red-600 font-medium">
-                        <i class="fas fa-times-circle mr-1"></i>已有数据
+                    <span class="text-yellow-600 font-medium">
+                        <i class="fas fa-exclamation-circle mr-1"></i>已有数据（可更新）
                     </span>
                 `;
-                validationElement.parentElement.parentElement.classList.add('bg-red-50', 'border-red-300');
-                validationElement.parentElement.parentElement.classList.remove('hover:bg-blue-50', 'hover:border-blue-300');
+                validationElement.parentElement.parentElement.classList.add('bg-yellow-50', 'border-yellow-300');
+                validationElement.parentElement.parentElement.classList.remove('hover:bg-blue-50', 'hover:border-blue-300', 'bg-red-50', 'border-red-300');
             } else {
                 validationElement.innerHTML = `
                     <span class="text-green-600 font-medium">
@@ -1129,8 +1218,8 @@
                 }
 
                 if (isExisting) {
-                    // 体检ID已存在，不允许选择
-                    showNotification('error', `该体检ID在${getDepartmentDisplayName(departmentType)}中已存在，请选择其他体检ID`);
+                    // 体检ID已存在，询问用户是否要更新
+                    showExistingDataConfirmModal(examId, identityCard, departmentType);
                     return;
                 }
             } catch (error) {
@@ -1485,9 +1574,10 @@
         }
 
         // 填充常规科室数据表单
-        async function fillGeneralDepartmentForm(generalData) {
+        async function fillGeneralDepartmentForm(generalData, tjrq) {
             console.log('🔄 开始fillGeneralDepartmentForm调用');
             console.log('📊 接收常规科室数据:', generalData.length, '条记录');
+            console.log('📅 接收tjrq参数:', tjrq);
 
             // 确保显示健康数据录入区域
             const entryArea = document.getElementById('healthDataEntryArea');
@@ -1506,6 +1596,22 @@
             }
 
             console.log('🧹 常规科室容器已清空');
+
+            // 填充评估日期（使用传入的tjrq参数）
+            if (tjrq) {
+                const assessmentDateInput = document.getElementById('assessmentDate');
+                if (assessmentDateInput) {
+                    // 格式化tjrq日期为YYYY-MM-DD格式
+                    const tjrqDate = new Date(tjrq);
+                    // 使用本地时间格式化，避免时区问题
+                    const year = tjrqDate.getFullYear();
+                    const month = String(tjrqDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(tjrqDate.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
+                    assessmentDateInput.value = formattedDate;
+                    console.log('📅 使用tjrq参数填充常规科室评估日期:', formattedDate, '原始tjrq:', tjrq);
+                }
+            }
 
             // 处理实际API返回的数据结构
             // 实际数据格式：{StudyID: "...", 胸廓: "未见异常", 肺: "双肺呼吸音清晰", ...}
@@ -1580,15 +1686,19 @@
                 entryArea.classList.remove('hidden');
             }
 
-            // 填充体检日期（如果提供了日期）
+            // 填充体检日期（使用传入的examDate参数）
             if (examDate) {
-                const examDateInput = document.getElementById('examDate');
+                const examDateInput = document.getElementById('imagingExamDate');
                 if (examDateInput) {
-                    // 将ISO日期格式转换为YYYY-MM-DD格式
-                    const date = new Date(examDate);
-                    const formattedDate = date.toISOString().split('T')[0];
+                    // 格式化日期为YYYY-MM-DD格式
+                    const tjrqDate = new Date(examDate);
+                    // 使用本地时间格式化，避免时区问题
+                    const year = tjrqDate.getFullYear();
+                    const month = String(tjrqDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(tjrqDate.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
                     examDateInput.value = formattedDate;
-                    console.log('📅 已填充体检日期:', formattedDate);
+                    console.log('📅 使用examDate参数填充影像科室体检日期:', formattedDate, '原始examDate:', examDate);
                 }
             }
 
@@ -1679,15 +1789,19 @@
                 entryArea.classList.remove('hidden');
             }
 
-            // 填充体检日期（如果提供了日期）
+            // 填充体检日期（使用传入的tjrq参数）
             if (examDate) {
                 const instrumentDateInput = document.getElementById('instrumentDate');
                 if (instrumentDateInput) {
-                    // 将ISO日期格式转换为YYYY-MM-DD格式
-                    const date = new Date(examDate);
-                    const formattedDate = date.toISOString().split('T')[0];
+                    // 格式化日期为YYYY-MM-DD格式
+                    const tjrqDate = new Date(examDate);
+                    // 使用本地时间格式化，避免时区问题
+                    const year = tjrqDate.getFullYear();
+                    const month = String(tjrqDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(tjrqDate.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
                     instrumentDateInput.value = formattedDate;
-                    console.log('📅 已填充仪器室检查日期:', formattedDate);
+                    console.log('📅 使用tjrq参数填充仪器室检查日期:', formattedDate, '原始examDate:', examDate);
                 }
             }
 
@@ -1750,7 +1864,7 @@
         }
 
         // 保存常规科室数据到后端
-        async function saveGeneralDepartmentDataToBackend() {
+        async function saveGeneralDepartmentDataToBackend(forceUpdate = false) {
             if (!window.selectedCustomerId) {
                 NotificationHelper.validationError('请先选择检客，然后再保存常规科室数据');
                 return;
@@ -1803,7 +1917,11 @@
                 NotificationHelper.warning(`发现 ${incompleteItems} 个不完整的评估项目已跳过，只保存完整的项目`, '数据验证警告');
             }
 
-            const savingNotification = NotificationHelper.saving(`正在保存 ${assessmentItems.length} 项常规科室数据到数据库...`);
+            // 检查是否为更新模式
+            const isUpdateMode = forceUpdate || (window.isUpdateMode && window.updateExamId === examId);
+            const actionText = isUpdateMode ? '更新' : '保存';
+
+            const savingNotification = NotificationHelper.saving(`正在${actionText} ${assessmentItems.length} 项常规科室数据到数据库...`);
 
             try {
                 const response = await fetch(`${CONFIG.api.baseURL}/health-assessments`, {
@@ -1819,7 +1937,8 @@
                         department: selectedDepartmentName,
                         doctor: doctorName,
                         assessmentData: assessmentItems,
-                        summary: `常规科室评估 - ${selectedDepartmentName} - 共${assessmentItems.length}项`
+                        summary: `常规科室评估 - ${selectedDepartmentName} - 共${assessmentItems.length}项`,
+                        forceUpdate: isUpdateMode
                     })
                 });
 
@@ -1831,7 +1950,14 @@
                 }
 
                 if (result.status === 'Success') {
-                    NotificationHelper.complete(`成功保存 ${assessmentItems.length} 项常规科室数据，体检ID: ${examId}`, '保存成功');
+                    const successMessage = result.data?.isUpdate
+                        ? `成功更新 ${assessmentItems.length} 项常规科室数据，体检ID: ${examId}`
+                        : `成功保存 ${assessmentItems.length} 项常规科室数据，体检ID: ${examId}`;
+                    NotificationHelper.complete(successMessage, result.data?.isUpdate ? '更新成功' : '保存成功');
+
+                    // 清除更新模式标记
+                    window.isUpdateMode = false;
+                    window.updateExamId = null;
 
                     // 更新检客最后体检日期
                     try {
@@ -1852,9 +1978,12 @@
 
                     // 清空表单
                     clearGeneralForm();
+                } else if (result.status === 'Exists') {
+                    // 数据已存在，询问用户是否要更新
+                    showDataExistsConfirmDialog(examId, assessmentItems.length, 'general');
                 } else {
                     if (result.message && result.message.includes('存在')) {
-                        NotificationHelper.error(result.message, '数据重复错误', true);
+                        showDataExistsConfirmDialog(examId, assessmentItems.length, 'general');
                     } else {
                         NotificationHelper.error(result.message || '常规科室数据保存失败，请重试', '保存失败');
                     }
@@ -1869,7 +1998,7 @@
 
                 if (error.message.includes('fetch') || error.message.includes('network')) {
                     NotificationHelper.networkError('网络连接失败，无法保存数据，请检查网络连接后重试', () => {
-                        saveGeneralDepartmentDataToBackend(); // 重试函数
+                        saveGeneralDepartmentDataToBackend(forceUpdate); // 重试函数
                     });
                 } else if (error.message.includes('500')) {
                     NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
@@ -1880,14 +2009,14 @@
         }
 
         // 保存影像科室数据到后端
-        async function saveImagingDepartmentDataToBackend() {
+        async function saveImagingDepartmentDataToBackend(forceUpdate = false) {
             if (!window.selectedCustomerId) {
                 NotificationHelper.validationError('请先选择检客，然后再保存影像科室数据');
                 return;
             }
 
             const examId = document.getElementById('medicalExamId').value;
-            const examDate = document.getElementById('examDate').value;
+            const examDate = document.getElementById('imagingExamDate').value;
             const doctorName = document.getElementById('imagingDoctorName').value;
             const examDescription = document.getElementById('examDescription').value;
             const examConclusion = document.getElementById('examConclusion').value;
@@ -1900,7 +2029,11 @@
                 return;
             }
 
-            const loadingNotification = NotificationHelper.saving('正在保存影像科室数据，请稍候...');
+            // 检查是否为更新模式
+            const isUpdateMode = forceUpdate || (window.isUpdateMode && window.updateExamId === examId);
+            const actionText = isUpdateMode ? '更新' : '保存';
+
+            const loadingNotification = NotificationHelper.saving(`正在${actionText}影像科室数据，请稍候...`);
 
             try {
                 // 构建影像科室数据结构
@@ -1925,7 +2058,8 @@
                     ],
                     summary: `影像科室评估 - ${selectedDepartmentName}`,
                     medicalExamId: examId,
-                    createdBy: window.userId || 'system'
+                    createdBy: window.userId || 'system',
+                    forceUpdate: isUpdateMode
                 };
 
                 console.log('🔄 准备保存影像科室数据:', imagingData);
@@ -1937,7 +2071,14 @@
                     const result = await response.json();
 
                     if (result.status === 'Success') {
-                        NotificationHelper.success('影像科室数据保存成功！', '保存成功');
+                        const successMessage = result.data?.isUpdate
+                            ? '影像科室数据更新成功！'
+                            : '影像科室数据保存成功！';
+                        NotificationHelper.success(successMessage, result.data?.isUpdate ? '更新成功' : '保存成功');
+
+                        // 清除更新模式标记
+                        window.isUpdateMode = false;
+                        window.updateExamId = null;
 
                         // 更新检客最后体检日期
                         try {
@@ -1955,8 +2096,14 @@
                         document.getElementById('imagingHealthForm').reset();
 
                         console.log('✅ 影像科室数据保存成功:', result.data);
+                    } else if (result.status === 'Exists') {
+                        showDataExistsConfirmDialog(examId, 2, 'imaging');
                     } else {
-                        throw new Error(result.message || '保存失败');
+                        if (result.message && result.message.includes('存在')) {
+                            showDataExistsConfirmDialog(examId, 2, 'imaging');
+                        } else {
+                            throw new Error(result.message || '保存失败');
+                        }
                     }
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1967,7 +2114,7 @@
 
                 if (error.message.includes('fetch')) {
                     NotificationHelper.networkError('网络连接失败，无法保存影像科室数据，请检查网络设置后重试', () => {
-                        saveImagingDepartmentDataToBackend(); // 重试函数
+                        saveImagingDepartmentDataToBackend(forceUpdate); // 重试函数
                     });
                 } else if (error.message.includes('500')) {
                     NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
@@ -1983,7 +2130,7 @@
         }
 
         // 保存仪器室数据到后端
-        async function saveInstrumentRoomDataToBackend() {
+        async function saveInstrumentRoomDataToBackend(forceUpdate = false) {
             if (!window.selectedCustomerId) {
                 NotificationHelper.validationError('请先选择检客，然后再保存仪器室数据');
                 return;
@@ -2002,7 +2149,11 @@
                 return;
             }
 
-            const loadingNotification = NotificationHelper.saving('正在保存仪器室数据，请稍候...');
+            // 检查是否为更新模式
+            const isUpdateMode = forceUpdate || (window.isUpdateMode && window.updateExamId === examId);
+            const actionText = isUpdateMode ? '更新' : '保存';
+
+            const loadingNotification = NotificationHelper.saving(`正在${actionText}仪器室数据，请稍候...`);
 
             try {
                 // 构建仪器室数据结构
@@ -2021,7 +2172,8 @@
                     ],
                     summary: `仪器室评估 - ${selectedDepartmentName}`,
                     medicalExamId: examId,
-                    createdBy: window.userId || 'system'
+                    createdBy: window.userId || 'system',
+                    forceUpdate: isUpdateMode
                 };
 
                 console.log('🔄 准备保存仪器室数据:', instrumentData);
@@ -2033,7 +2185,14 @@
                     const result = await response.json();
 
                     if (result.status === 'Success') {
-                        NotificationHelper.success('仪器室数据保存成功！', '保存成功');
+                        const successMessage = result.data?.isUpdate
+                            ? '仪器室数据更新成功！'
+                            : '仪器室数据保存成功！';
+                        NotificationHelper.success(successMessage, result.data?.isUpdate ? '更新成功' : '保存成功');
+
+                        // 清除更新模式标记
+                        window.isUpdateMode = false;
+                        window.updateExamId = null;
 
                         // 更新检客最后体检日期
                         try {
@@ -2051,8 +2210,14 @@
                         document.getElementById('instrumentHealthForm').reset();
 
                         console.log('✅ 仪器室数据保存成功:', result.data);
+                    } else if (result.status === 'Exists') {
+                        showDataExistsConfirmDialog(examId, 1, 'instrument');
                     } else {
-                        throw new Error(result.message || '保存失败');
+                        if (result.message && result.message.includes('存在')) {
+                            showDataExistsConfirmDialog(examId, 1, 'instrument');
+                        } else {
+                            throw new Error(result.message || '保存失败');
+                        }
                     }
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -2063,7 +2228,7 @@
 
                 if (error.message.includes('fetch')) {
                     NotificationHelper.networkError('网络连接失败，无法保存仪器室数据，请检查网络设置后重试', () => {
-                        saveInstrumentRoomDataToBackend(); // 重试函数
+                        saveInstrumentRoomDataToBackend(forceUpdate); // 重试函数
                     });
                 } else if (error.message.includes('500')) {
                     NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
@@ -2079,7 +2244,7 @@
         }
 
         // 保存检验科数据到后端
-        async function saveLaboratoryDataToBackend() {
+        async function saveLaboratoryDataToBackend(forceUpdate = false) {
             if (!window.selectedCustomerId) {
                 NotificationHelper.validationError('请先选择检客，然后再保存检验数据');
                 return;
@@ -2135,7 +2300,11 @@
                 NotificationHelper.warning(`发现 ${incompleteItems} 个不完整的检验项目已跳过，只保存完整的项目`, '数据验证警告');
             }
 
-            const savingNotification = NotificationHelper.saving(`正在保存 ${laboratoryItems.length} 项检验数据到数据库...`);
+            // 检查是否为更新模式（通过选择已存在的体检ID触发）
+            const isUpdateMode = forceUpdate || (window.isUpdateMode && window.updateExamId === examId);
+            const actionText = isUpdateMode ? '更新' : '保存';
+
+            const savingNotification = NotificationHelper.saving(`正在${actionText} ${laboratoryItems.length} 项检验数据到数据库...`);
 
             try {
                 const response = await fetch(`${CONFIG.api.baseURL}/laboratory-data`, {
@@ -2149,7 +2318,8 @@
                         examId,
                         checkDate,
                         laboratoryItems,
-                        doctor: ''
+                        doctor: '',
+                        forceUpdate: isUpdateMode
                     })
                 });
 
@@ -2161,7 +2331,14 @@
                 }
 
                 if (result.status === 'Success') {
-                    NotificationHelper.complete(`成功保存 ${laboratoryItems.length} 项检验数据，体检ID: ${examId}`, '保存成功');
+                    const successMessage = result.data?.isUpdate
+                        ? `成功更新 ${laboratoryItems.length} 项检验数据，体检ID: ${examId}`
+                        : `成功保存 ${laboratoryItems.length} 项检验数据，体检ID: ${examId}`;
+                    NotificationHelper.complete(successMessage, result.data?.isUpdate ? '更新成功' : '保存成功');
+
+                    // 清除更新模式标记
+                    window.isUpdateMode = false;
+                    window.updateExamId = null;
 
                     // 更新检客最后体检日期
                     try {
@@ -2182,9 +2359,13 @@
 
                     // 清空表单
                     clearLabForm();
+                } else if (result.status === 'Exists') {
+                    // 数据已存在，询问用户是否要更新
+                    showDataExistsConfirmDialog(examId, laboratoryItems.length, 'laboratory');
                 } else {
                     if (result.message && result.message.includes('存在')) {
-                        NotificationHelper.error(result.message, '数据重复错误', true);
+                        // 兼容旧的错误响应格式
+                        showDataExistsConfirmDialog(examId, laboratoryItems.length, 'laboratory');
                     } else {
                         NotificationHelper.error(result.message || '检验科数据保存失败，请重试', '保存失败');
                     }
@@ -2199,13 +2380,98 @@
 
                 if (error.message.includes('fetch') || error.message.includes('network')) {
                     NotificationHelper.networkError('网络连接失败，无法保存数据，请检查网络连接后重试', () => {
-                        saveLaboratoryDataToBackend(); // 重试函数
+                        saveLaboratoryDataToBackend(forceUpdate); // 重试函数
                     });
                 } else if (error.message.includes('500')) {
                     NotificationHelper.databaseError('服务器内部错误，数据保存失败，请联系技术人员');
                 } else {
                     NotificationHelper.error('保存检验科数据失败: ' + error.message, '保存错误');
                 }
+            }
+        }
+
+        /**
+         * 显示数据已存在的确认对话框（保存时触发）
+         */
+        function showDataExistsConfirmDialog(examId, itemCount, departmentType) {
+            const departmentName = getDepartmentDisplayName(departmentType);
+
+            const modalContainer = document.getElementById('modalContainer');
+            if (!modalContainer) return;
+
+            modalContainer.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <i class="fas fa-database text-yellow-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">数据已存在</h3>
+                                    <p class="text-sm text-gray-500">体检ID: ${examId}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-700 mb-4">
+                                该体检ID在<span class="font-medium text-blue-600">${departmentName}</span>中已存在数据记录。
+                            </p>
+                            <p class="text-gray-600 text-sm mb-4">
+                                当前准备保存 <span class="font-medium">${itemCount}</span> 条数据，是否要覆盖更新已有数据？
+                            </p>
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <p class="text-yellow-800 text-sm">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    更新操作将删除该体检ID的所有旧数据，然后保存新数据。
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                            <button onclick="closeDataExistsConfirmDialog()"
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-times mr-2"></i>取消
+                            </button>
+                            <button onclick="confirmUpdateData('${departmentType}')"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-sync-alt mr-2"></i>确认更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * 关闭数据已存在确认对话框
+         */
+        function closeDataExistsConfirmDialog() {
+            const modalContainer = document.getElementById('modalContainer');
+            if (modalContainer) {
+                modalContainer.innerHTML = '';
+            }
+        }
+
+        /**
+         * 确认更新数据
+         */
+        function confirmUpdateData(departmentType) {
+            closeDataExistsConfirmDialog();
+
+            // 根据科室类型调用对应的保存函数，并传入强制更新参数
+            switch (departmentType) {
+                case 'laboratory':
+                    saveLaboratoryDataToBackend(true);
+                    break;
+                case 'general':
+                    saveGeneralDepartmentDataToBackend(true);
+                    break;
+                case 'imaging':
+                    saveImagingDepartmentDataToBackend(true);
+                    break;
+                case 'instrument':
+                    saveInstrumentRoomDataToBackend(true);
+                    break;
             }
         }
 
@@ -2450,6 +2716,103 @@
                 });
             }
         });
+
+        /**
+         * 显示数据已存在的确认模态框
+         * 询问用户是否要更新覆盖已有数据
+         */
+        function showExistingDataConfirmModal(examId, identityCard, departmentType) {
+            const modalContainer = document.getElementById('modalContainer');
+            if (!modalContainer) return;
+
+            const departmentName = getDepartmentDisplayName(departmentType);
+
+            modalContainer.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">数据已存在</h3>
+                                    <p class="text-sm text-gray-500">体检ID: ${examId}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-700 mb-4">
+                                该体检ID在<span class="font-medium text-blue-600">${departmentName}</span>中已存在数据记录。
+                            </p>
+                            <p class="text-gray-600 text-sm mb-4">
+                                您可以选择：
+                            </p>
+                            <ul class="text-sm text-gray-600 space-y-2 mb-4">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+                                    <span><strong>更新数据</strong>：覆盖已有数据，使用新获取的数据替换</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-times-circle text-gray-400 mr-2 mt-0.5"></i>
+                                    <span><strong>取消</strong>：保留原有数据，选择其他体检ID</span>
+                                </li>
+                            </ul>
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <p class="text-yellow-800 text-sm">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    更新操作将删除该体检ID的所有旧数据，请确认后操作。
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                            <button onclick="closeExistingDataConfirmModal()"
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-times mr-2"></i>取消
+                            </button>
+                            <button onclick="confirmSelectExistingExamId('${examId}', '${identityCard}', '${departmentType}')"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-sync-alt mr-2"></i>更新数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * 关闭数据已存在确认模态框
+         */
+        function closeExistingDataConfirmModal() {
+            const modalContainer = document.getElementById('modalContainer');
+            if (modalContainer) {
+                modalContainer.innerHTML = '';
+            }
+        }
+
+        /**
+         * 确认选择已存在数据的体检ID（用于更新）
+         */
+        function confirmSelectExistingExamId(examId, identityCard, departmentType) {
+            // 关闭确认模态框
+            closeExistingDataConfirmModal();
+
+            // 填充体检ID到输入框
+            document.getElementById('medicalExamId').value = examId;
+
+            // 标记为更新模式
+            window.isUpdateMode = true;
+            window.updateExamId = examId;
+
+            // 显示成功提示
+            showNotification('success', `已选择体检ID: ${examId}（更新模式）`);
+
+            // 更新调阅按钮状态
+            updateLookupExamButton();
+
+            // 关闭体检ID选择模态框（如果还开着的话）
+            closeExaminationIdSelectionModal();
+        }
     </script>
 </body>
 </html>

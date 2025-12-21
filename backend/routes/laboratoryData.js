@@ -5,10 +5,11 @@ const examinationDateService = require('../src/services/examinationDateService')
 /**
  * 保存检验科数据
  * POST /api/laboratory-data
+ * 支持 forceUpdate 参数强制更新已有数据
  */
 router.post('/', async (req, res) => {
     try {
-        const { customerId, examId, checkDate, laboratoryItems, doctor } = req.body;
+        const { customerId, examId, checkDate, laboratoryItems, doctor, forceUpdate } = req.body;
 
         // 验证必需字段（checkDate现在变为可选，会自动获取）
         if (!customerId || !examId || !laboratoryItems || laboratoryItems.length === 0) {
@@ -64,11 +65,30 @@ router.post('/', async (req, res) => {
                            WHERE ExamId = @ExamId AND CustomerId = @CustomerId`;
         const checkResult = await checkRequest.query(checkQuery);
 
-        if (checkResult.recordset[0].count > 0) {
-            return res.status(400).json({
-                status: 'Error',
-                message: '该体检ID的数据已存在，请勿重复保存'
+        const dataExists = checkResult.recordset[0].count > 0;
+
+        if (dataExists && !forceUpdate) {
+            // 数据已存在且未请求强制更新，返回提示信息
+            return res.status(409).json({
+                status: 'Exists',
+                message: '该体检ID的检验数据已存在',
+                data: {
+                    examId,
+                    existingCount: checkResult.recordset[0].count
+                }
             });
+        }
+
+        // 如果是强制更新，先删除旧数据
+        if (dataExists && forceUpdate) {
+            console.log(`🔄 强制更新模式：删除体检ID ${examId} 的旧检验数据`);
+            const deleteRequest = new sql.Request(pool);
+            deleteRequest.input('ExamId', sql.NVarChar, examId);
+            deleteRequest.input('CustomerId', sql.UniqueIdentifier, realCustomerId);
+
+            const deleteQuery = `DELETE FROM LaboratoryData WHERE ExamId = @ExamId AND CustomerId = @CustomerId`;
+            const deleteResult = await deleteRequest.query(deleteQuery);
+            console.log(`✅ 已删除 ${deleteResult.rowsAffected[0]} 条旧数据`);
         }
 
         // 插入检验数据
@@ -104,15 +124,17 @@ router.post('/', async (req, res) => {
             successCount++;
         }
 
+        const actionType = dataExists && forceUpdate ? '更新' : '保存';
         res.status(200).json({
             status: 'Success',
-            message: `成功保存 ${successCount} 项检验数据${checkDate ? '' : '（已自动获取体检日期）'}`,
+            message: `成功${actionType} ${successCount} 项检验数据${checkDate ? '' : '（已自动获取体检日期）'}`,
             data: {
                 customerId,
                 examId,
                 itemCount: successCount,
                 checkDate: finalCheckDate,
-                dateSource: checkDate ? 'manual' : 'auto'
+                dateSource: checkDate ? 'manual' : 'auto',
+                isUpdate: dataExists && forceUpdate
             }
         });
 

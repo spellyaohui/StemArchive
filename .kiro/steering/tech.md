@@ -53,7 +53,7 @@ npx http-server -p 8080
 ```bash
 cd backend
 npm run build        # 构建前端
-npm start            # 启动统一服务（端口 3000）
+npm start            # 启动统一服务（端口 5000，可通过 .env 中 PORT 配置）
 # 或使用 PM2
 pm2 start server.js --name "stem-cell-system"
 ```

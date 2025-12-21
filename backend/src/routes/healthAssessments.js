@@ -204,7 +204,47 @@ router.post('/',
                 });
             }
 
-            const { customerId, department, medicalExamId, doctor, assessmentData: data, summary } = req.body;
+            const { customerId, department, medicalExamId, doctor, assessmentData: data, summary, forceUpdate } = req.body;
+
+            // 检查是否已存在相同体检ID和科室的记录
+            if (medicalExamId && department) {
+                const checkQuery = `
+                    SELECT ID, AssessmentDate, Department, Doctor
+                    FROM HealthAssessments
+                    WHERE MedicalExamID = @medicalExamId AND Department = @department AND CustomerID = @customerId
+                `;
+                const checkParams = [
+                    { name: 'medicalExamId', value: medicalExamId, type: sql.NVarChar },
+                    { name: 'department', value: department, type: sql.NVarChar },
+                    { name: 'customerId', value: customerId, type: sql.UniqueIdentifier }
+                ];
+                const existingRecords = await executeQuery(checkQuery, checkParams);
+
+                if (existingRecords && existingRecords.length > 0 && !forceUpdate) {
+                    // 数据已存在且未请求强制更新，返回提示信息
+                    return res.status(409).json({
+                        status: 'Exists',
+                        message: `该体检ID在${department}中已存在数据`,
+                        data: {
+                            medicalExamId,
+                            department,
+                            existingCount: existingRecords.length,
+                            existingRecord: existingRecords[0]
+                        }
+                    });
+                }
+
+                // 如果是强制更新，先删除旧数据
+                if (existingRecords && existingRecords.length > 0 && forceUpdate) {
+                    console.log(`🔄 强制更新模式：删除体检ID ${medicalExamId} 在 ${department} 的旧数据`);
+                    const deleteQuery = `
+                        DELETE FROM HealthAssessments
+                        WHERE MedicalExamID = @medicalExamId AND Department = @department AND CustomerID = @customerId
+                    `;
+                    const deleteResult = await executeQuery(deleteQuery, checkParams);
+                    console.log(`✅ 已删除旧数据`);
+                }
+            }
 
             // 使用统一服务获取或创建健康评估记录
             const assessment = await unifiedHealthAssessmentService.getOrCreateUnifiedAssessment(
@@ -241,7 +281,9 @@ router.post('/',
 
             res.status(201).json({
                 status: 'Success',
-                message: medicalExamId ? '健康评估创建成功（使用现有体检ID）' : '健康评估创建成功（生成新体检ID）',
+                message: forceUpdate
+                    ? '健康评估更新成功'
+                    : (medicalExamId ? '健康评估创建成功（使用现有体检ID）' : '健康评估创建成功（生成新体检ID）'),
                 data: {
                     ...assessment,
                     customerInfo: {
@@ -250,7 +292,8 @@ router.post('/',
                         identityCard: req.customer.IdentityCard
                     },
                     isUnified: true,
-                    unifiedDate: assessment.AssessmentDate
+                    unifiedDate: assessment.AssessmentDate,
+                    isUpdate: forceUpdate || false
                 }
             });
         } catch (error) {
