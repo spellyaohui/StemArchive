@@ -290,8 +290,8 @@ span.bg-orange-100.text-orange-800 {
     color: #1e40af;
 }
 
-/* 加载动画 */
-.loading {
+/* 加载动画 - 仅用于独立的加载指示器元素 */
+.loading-spinner {
     display: inline-block;
     width: 20px;
     height: 20px;
@@ -299,6 +299,12 @@ span.bg-orange-100.text-orange-800 {
     border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+/* 按钮内的加载状态 */
+button.loading .loading-spinner,
+.btn.loading .loading-spinner {
+    display: inline-block;
 }
 
 @keyframes spin {

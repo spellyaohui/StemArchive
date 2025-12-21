@@ -1210,6 +1210,13 @@ router.post('/comparison/generate',
                 });
             }
 
+            // 按体检日期升序排序（最早的在前面）
+            exams.sort((a, b) => {
+                const dateA = new Date(a.examDate);
+                const dateB = new Date(b.examDate);
+                return dateA - dateB;
+            });
+
             // 构建对比数据 - 使用真实的客户姓名
             const comparisonData = {
                 customerName: exams[0]?.customerName || '未知客户',

@@ -573,15 +573,15 @@ function getNotificationIcon(type) {
         database: 'fa-database',            // 数据库相关
         auth: 'fa-user-shield',             // 认证相关
         permission: 'fa-lock',              // 权限相关
-        loading: 'fa-spinner fa-spin',      // 加载中
-        saving: 'fa-save',                  // 保存中
-        uploading: 'fa-upload',             // 上传中
-        downloading: 'fa-download',         // 下载中
-        searching: 'fa-search',             // 搜索中
-        processing: 'fa-cogs fa-spin',      // 处理中
+        loading: 'fa-hourglass-half fa-pulse',  // 加载中（脉冲动画）
+        saving: 'fa-save fa-pulse',         // 保存中（脉冲动画）
+        uploading: 'fa-cloud-upload-alt fa-pulse',  // 上传中（脉冲动画）
+        downloading: 'fa-cloud-download-alt fa-pulse',  // 下载中（脉冲动画）
+        searching: 'fa-search fa-pulse',    // 搜索中（脉冲动画）
+        processing: 'fa-cog fa-pulse',      // 处理中（脉冲动画）
         complete: 'fa-check-double',        // 完成
         failed: 'fa-times-circle',          // 失败
-        pending: 'fa-clock',                // 等待中
+        pending: 'fa-clock fa-pulse',       // 等待中（脉冲动画）
         question: 'fa-question-circle',     // 疑问
         help: 'fa-question-circle',         // 帮助
         tip: 'fa-lightbulb',                // 提示
