@@ -18,7 +18,9 @@
   "type": "commonjs",
   "devDependencies": {
     "@eslint/js": "^9.37.0",
-    "eslint": "^9.37.0"
+    "@tailwindcss/cli": "^4.1.18",
+    "eslint": "^9.37.0",
+    "tailwindcss": "^4.1.18"
   },
   "dependencies": {
     "chart.js": "^4.5.0"
