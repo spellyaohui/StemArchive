@@ -56,8 +56,17 @@ function getExaminationAPIBaseURL() {
         return window.EXAMINATION_API_CONFIG.baseURL;
     }
 
-    // 第三方体检API始终使用端口3000（独立服务）
-    return `${currentProtocol}//${currentHost}:3000/api`;
+    // 使用环境变量配置
+    if (window.ENV && window.ENV.EXAMINATION_API_BASE_URL) {
+        return window.ENV.EXAMINATION_API_BASE_URL;
+    }
+
+    // 根据环境选择对应的API地址
+    if (isDevelopment()) {
+        return window.ENV?.DEVELOPMENT_EXAMINATION_API_BASE_URL || 'http://172.17.18.66:3001/api';
+    } else {
+        return window.ENV?.PRODUCTION_EXAMINATION_API_BASE_URL || 'http://172.17.18.66:3001/api';
+    }
 }
 
 // 配置对象

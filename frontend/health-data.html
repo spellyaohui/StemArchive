@@ -402,6 +402,7 @@
     </div>
 
     <!-- JavaScript - 使用 defer 异步加载优化性能 -->
+    <script src="env.js" defer></script>
     <script src="config.js" defer></script>
     <script src="js/auth.js" defer></script>
     <script src="js/api.js" defer></script>
@@ -990,12 +991,15 @@
             }
 
             try {
-                // 调用第三方API获取体检ID列表
-                const examIdsUrl = `${window.EXAMINATION_API_CONFIG.baseURL}/examination-ids/${identityCard}`;
+                // 调用后端API获取体检ID列表
+                const examIdsUrl = `${CONFIG.api.baseURL}/examination-import/exam-ids/${identityCard}`;
 
                 const response = await fetch(examIdsUrl, {
                     method: 'GET',
-                    headers: window.EXAMINATION_API_CONFIG.headers
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
                 });
 
                 if (!response.ok) {
@@ -1004,7 +1008,7 @@
 
                 const result = await response.json();
 
-                if (result.code === 200 && result.data && result.data.length > 0) {
+                if (result.status === 'Success' && result.data && result.data.length > 0) {
                     // 成功获取到体检ID列表
                     showNotification('success', `查询到 ${result.data.length} 条体检记录，请选择`);
                     await showExaminationIdSelectionModal(result.data, identityCard, selectedDepartment);

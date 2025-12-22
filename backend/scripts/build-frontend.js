@@ -6,6 +6,18 @@
 const fs = require('fs');
 const path = require('path');
 
+// 引入前端环境变量构建脚本
+const frontendScriptsDir = path.join(__dirname, '../../frontend/scripts');
+let buildEnv = null;
+
+try {
+    if (fs.existsSync(path.join(frontendScriptsDir, 'build-env.js'))) {
+        buildEnv = require(path.join(frontendScriptsDir, 'build-env.js')).buildEnv;
+    }
+} catch (error) {
+    console.warn('⚠️ 无法加载前端环境变量构建脚本:', error.message);
+}
+
 // 配置
 const config = {
     // 前端源目录
@@ -123,6 +135,19 @@ function main() {
     console.log(`源目录: ${sourceDir}`);
     console.log(`目标目录: ${targetDir}`);
     console.log(`排除项: ${excludes.join(', ')}\n`);
+
+    // 步骤 0: 构建前端环境变量
+    console.log('步骤 0: 构建前端环境变量...');
+    if (buildEnv) {
+        try {
+            buildEnv();
+            console.log('  环境变量构建完成');
+        } catch (error) {
+            console.warn('  环境变量构建失败:', error.message);
+        }
+    } else {
+        console.log('  跳过环境变量构建（构建脚本不可用）');
+    }
 
     // 步骤 1: 清理旧的 public 目录
     console.log('步骤 1: 清理旧的 public 目录...');
