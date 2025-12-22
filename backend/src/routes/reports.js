@@ -1909,8 +1909,17 @@ router.post('/treatment-summary/:id/convert-pdf', async (req, res) => {
             });
         }
 
+        // 检查PDF转换服务是否可用
+        const serviceAvailable = await pdfService.isServiceAvailable();
+        if (!serviceAvailable) {
+            return res.status(503).json({
+                status: 'Error',
+                message: 'PDF转换服务不可用，请稍后重试'
+            });
+        }
+
         // 调用PDF服务转换
-        const pdfResult = await pdfService.convertMarkdownToPdf(report.AIAnalysis);
+        const pdfResult = await pdfService.convertMarkdownToPDF(report.AIAnalysis);
 
         if (pdfResult.success) {
             res.json({

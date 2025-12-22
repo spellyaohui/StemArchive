@@ -1637,14 +1637,6 @@ class ReportsManager {
     // 报告类型按钮点击
     document.querySelectorAll('.report-type-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        // 移除所有按钮的active状态
-        document.querySelectorAll('.report-type-btn').forEach(b => {
-          b.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-200');
-        });
-
-        // 给当前按钮添加active状态
-        btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-200');
-
         const type = btn.getAttribute('data-tab');
         this.selectReportType(type);
 
@@ -1665,10 +1657,7 @@ class ReportsManager {
     });
 
     // 默认选中第一个按钮（单次报告）
-    const firstReportBtn = document.querySelector('.report-type-btn[data-tab="single"]');
-    if (firstReportBtn) {
-      firstReportBtn.classList.add('ring-2', 'ring-orange-500', 'bg-orange-200');
-    }
+    this.selectReportType('single');
 
     // 默认隐藏历史报告部分（单次报告不显示历史）
     const historySection = document.getElementById('historyReportsSection');
@@ -1800,13 +1789,25 @@ class ReportsManager {
   selectReportType(type) {
     this.selectedReportType = type;
 
-    // 更新按钮样式
-    document.querySelectorAll('.report-type-btn').forEach((btn, index) => {
-      const types = ['comparison', 'treatment', 'health', 'single'];
-      if (types[index] === type) {
-        btn.classList.add('ring-2', 'ring-blue-500');
+    // 更新按钮样式 - 修正按钮顺序匹配HTML中的实际顺序
+    document.querySelectorAll('.report-type-btn').forEach((btn) => {
+      const btnType = btn.getAttribute('data-tab');
+      if (btnType === type) {
+        // 移除所有可能的样式类
+        btn.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-200', 'ring-purple-500', 'bg-purple-200', 'ring-blue-500', 'bg-blue-200', 'ring-green-500', 'bg-green-200');
+        // 根据按钮类型添加对应的激活样式
+        if (type === 'single') {
+          btn.classList.add('ring-2', 'ring-orange-500', 'bg-orange-200');
+        } else if (type === 'health') {
+          btn.classList.add('ring-2', 'ring-purple-500', 'bg-purple-200');
+        } else if (type === 'comparison') {
+          btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-200');
+        } else if (type === 'treatment') {
+          btn.classList.add('ring-2', 'ring-green-500', 'bg-green-200');
+        }
       } else {
-        btn.classList.remove('ring-2', 'ring-blue-500');
+        // 移除所有激活样式
+        btn.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-200', 'ring-purple-500', 'bg-purple-200', 'ring-blue-500', 'bg-blue-200', 'ring-green-500', 'bg-green-200');
       }
     });
 
