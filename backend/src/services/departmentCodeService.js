@@ -9,6 +9,7 @@ class DepartmentCodeService {
     constructor() {
         this.retryCount = parseInt(process.env.THIRD_DB_RETRY_COUNT || '3', 10);
         this.retryDelay = parseInt(process.env.THIRD_DB_RETRY_DELAY || '1000', 10);
+        this.lastError = null;
         console.log('科室编码服务初始化完成 - 数据源: 第三方只读数据库');
     }
 
@@ -46,6 +47,8 @@ class DepartmentCodeService {
      * @returns {Promise<Array<string>>} 体检ID数组，失败返回空数组
      */
     async getExaminationIds(identityCard) {
+        this.lastError = null;
+
         if (!identityCard) {
             console.warn('体检ID获取服务：身份证号不能为空');
             return [];
@@ -57,6 +60,7 @@ class DepartmentCodeService {
                 console.log(`✅ 成功获取体检ID列表：${identityCard} -> ${examIds.length} 条记录`);
                 return examIds;
             } catch (error) {
+                this.lastError = error;
                 console.error(`❌ 第${attempt}次尝试获取体检ID列表失败：`, error.message);
                 if (attempt < this.retryCount) {
                     await this.delay(this.retryDelay);
@@ -66,6 +70,10 @@ class DepartmentCodeService {
 
         console.error(`💥 获取体检ID列表最终失败：${identityCard}`);
         return [];
+    }
+
+    getLastError() {
+        return this.lastError;
     }
 
     delay(ms) {

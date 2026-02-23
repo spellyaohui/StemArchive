@@ -755,7 +755,7 @@ router.get('/customers/complete-profile', async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const query = `
+        const dataQuery = `
             SELECT
                 ccp.*,
                 c.Phone,
@@ -767,18 +767,18 @@ router.get('/customers/complete-profile', async (req, res) => {
             INNER JOIN Customers c ON ccp.CustomerID = c.ID
             ORDER BY ${safeSortColumn} ${requestedSortOrder}
             OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
-
-            SELECT COUNT(*) as Total FROM dbo.CustomerCompleteProfile;
         `;
 
-        const params = [
+        const dataParams = [
             { name: 'offset', value: offset, type: sql.Int },
             { name: 'limit', value: limit, type: sql.Int }
         ];
 
-        const result = await executeQuery(query, params);
-        const customers = result.slice(0, -1);
-        const total = result[result.length - 1].Total;
+        const countQuery = 'SELECT COUNT(*) as Total FROM dbo.CustomerCompleteProfile;';
+
+        const customers = await executeQuery(dataQuery, dataParams);
+        const countResult = await executeQuery(countQuery);
+        const total = countResult[0] ? countResult[0].Total : 0;
 
         res.json({
             status: 'Success',

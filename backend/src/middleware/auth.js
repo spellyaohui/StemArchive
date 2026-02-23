@@ -3,6 +3,10 @@ const JwtUtils = require('../utils/jwt');
 
 // JWT验证中间件
 const authMiddleware = async (req, res, next) => {
+    if (req.authValidated === true && req.user && req.user.id) {
+        return next();
+    }
+
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
@@ -34,6 +38,7 @@ const authMiddleware = async (req, res, next) => {
 
         // 将用户信息添加到请求对象
         req.user = users[0];
+        req.authValidated = true;
         next();
     } catch (error) {
         res.status(401).json({

@@ -33,7 +33,12 @@ const config = {
         'package.json',
         'package-lock.json',
         '.eslintrc.js',
-        '.eslintrc.json'
+        '.eslintrc.json',
+        '.env',
+        '.env.example',
+        'env.js',
+        'ENV_CONFIG.md',
+        'scripts'
     ]
 };
 

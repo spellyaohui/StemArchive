@@ -49,25 +49,6 @@ function getAPIBaseURL() {
     return '/api';
 }
 
-// 根据当前环境确定第三方体检API基础URL
-function getExaminationAPIBaseURL() {
-    // 优先使用预设的配置（如果已经设置）
-    if (window.EXAMINATION_API_CONFIG && window.EXAMINATION_API_CONFIG.baseURL) {
-        return window.EXAMINATION_API_CONFIG.baseURL;
-    }
-
-    // 使用环境变量配置
-    if (window.ENV && window.ENV.EXAMINATION_API_BASE_URL) {
-        return window.ENV.EXAMINATION_API_BASE_URL;
-    }
-
-    // 根据环境选择对应的API地址
-    if (isDevelopment()) {
-        return window.ENV?.DEVELOPMENT_EXAMINATION_API_BASE_URL || 'http://172.17.18.66:3001/api';
-    } else {
-        return window.ENV?.PRODUCTION_EXAMINATION_API_BASE_URL || 'http://172.17.18.66:3001/api';
-    }
-}
 
 // 配置对象
 const CONFIG = {
@@ -80,14 +61,6 @@ const CONFIG = {
         }
     },
 
-    // 第三方体检API配置
-    examinationAPI: {
-        baseURL: getExaminationAPIBaseURL(),
-        timeout: 10000,
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    },
 
     // 应用配置
     app: {
@@ -116,8 +89,6 @@ window.CONFIG = CONFIG;
 // 为了兼容性，也导出API_CONFIG
 window.API_CONFIG = CONFIG.api;
 
-// 导出第三方体检API配置
-window.EXAMINATION_API_CONFIG = CONFIG.examinationAPI;
 
 // 调试信息（仅开发环境）
 if (isDevelopment()) {
@@ -125,29 +96,22 @@ if (isDevelopment()) {
     console.log('  前端配置信息（开发模式）');
     console.log('========================================');
     console.log('API 基础地址:', CONFIG.api.baseURL);
-    console.log('体检 API 地址:', CONFIG.examinationAPI.baseURL);
     console.log('运行环境:', CONFIG.app.environment);
     console.log('========================================');
 }
 
 // 配置说明
 // ========================================
-// 
+//
 // 1. 主API配置：会根据当前环境自动调整
 //    - 开发环境(8080端口)：http://localhost:5000/api
 //    - 生产环境：/api（相对路径，自动适应任何域名和端口）
 //
-// 2. 第三方体检API配置：
-//    - 开发环境：http://localhost:3000/api
-//    - 生产环境：可通过 window.EXAMINATION_API_CONFIG.baseURL 自定义
-//    - 支持通过全局变量覆盖：window.EXAMINATION_API_CONFIG = { baseURL: '自定义URL' }
-//
-// 3. 使用方法：
+// 2. 使用方法：
 //    - 主API：CONFIG.api.baseURL
-//    - 第三方API：CONFIG.examinationAPI.baseURL
-//    - 或使用全局变量：window.API_CONFIG.baseURL, window.EXAMINATION_API_CONFIG.baseURL
+//    - 或使用全局变量：window.API_CONFIG.baseURL
 //
-// 4. 部署说明：
+// 3. 部署说明：
 //    - 开发时：前端运行 npx http-server -p 8080，后端运行 npm run dev
 //    - 生产时：运行 npm run build 构建前端，然后 npm start 启动统一服务器
 //

@@ -42,6 +42,7 @@ async function getExaminationIds(identityCard) {
       FROM JCXX
       WHERE SFZH = @sfzh
         AND SFBJ = 1
+        AND LEN(CAST(ISNULL(JCXX.YCXM, '') AS VARCHAR(8000))) > 0
       ORDER BY JCXX.CYRQ DESC
     `,
     [{ name: 'sfzh', value: identityCard }]

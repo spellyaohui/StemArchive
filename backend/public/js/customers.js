@@ -765,7 +765,12 @@ class CustomersManager {
         loadingNotification.remove();
       }
 
-      if (examIdsResult.status !== 'Success' || !examIdsResult.data || examIdsResult.data.length === 0) {
+      if (examIdsResult.status !== 'Success') {
+        NotificationHelper.error(examIdsResult.message || '第三方体检数据源连接异常，请检查系统配置', '数据源异常');
+        return;
+      }
+
+      if (!examIdsResult.data || examIdsResult.data.length === 0) {
         NotificationHelper.warning('未找到该身份证号对应的体检记录', '无体检记录');
         return;
       }

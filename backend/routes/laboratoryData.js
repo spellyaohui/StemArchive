@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const examinationDateService = require('../src/services/examinationDateService');
+const { connectDB } = require('../config/database');
 
 /**
  * 保存检验科数据
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
             }
         }
 
-        const pool = require('../config/database').pool;
+        const pool = await connectDB();
         const sql = require('mssql');
 
         // 根据传入的customerId查询真实的CustomerID
@@ -156,7 +157,7 @@ router.get('/check-exam-id/:examId', async (req, res) => {
         const { examId } = req.params;
         const sql = require('mssql');
 
-        const pool = require('../config/database').pool;
+        const pool = await connectDB();
 
         const request = new sql.Request(pool);
         request.input('ExamId', sql.NVarChar, examId);

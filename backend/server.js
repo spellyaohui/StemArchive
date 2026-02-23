@@ -57,7 +57,7 @@ async function initializeSystemSettings() {
             WHERE TABLE_NAME = 'SystemSettings'
         `);
 
-        if (tableCheck.recordset && tableCheck.recordset[0] && tableCheck.recordset[0].count === 0) {
+        if (tableCheck[0] && tableCheck[0].count === 0) {
             console.log('SystemSettings表不存在，正在创建...');
 
             // 创建SystemSettings表

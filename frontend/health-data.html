@@ -402,7 +402,6 @@
     </div>
 
     <!-- JavaScript - 使用 defer 异步加载优化性能 -->
-    <script src="env.js" defer></script>
     <script src="config.js" defer></script>
     <script src="js/auth.js" defer></script>
     <script src="js/api.js" defer></script>
@@ -935,7 +934,12 @@
 
                 const result = await response.json();
 
-                if (result.status === 'Success' && result.data && result.data.length > 0) {
+                if (result.status !== 'Success') {
+                    showNotification('error', result.message || '第三方体检数据源连接异常，请检查系统配置');
+                    return;
+                }
+
+                if (result.data && result.data.length > 0) {
                     // 成功获取到体检ID列表
                     showNotification('success', `查询到 ${result.data.length} 条体检记录，请选择`);
                     await showExaminationIdSelectionModal(result.data, identityCard, selectedDepartment);

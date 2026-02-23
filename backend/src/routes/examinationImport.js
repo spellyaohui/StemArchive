@@ -25,6 +25,15 @@ router.get('/exam-ids/:identityCard', authMiddleware, async (req, res) => {
         }
 
         const examIds = await departmentCodeService.getExaminationIds(identityCard);
+        const thirdDbError = departmentCodeService.getLastError();
+
+        if (thirdDbError) {
+            return res.status(503).json({
+                status: 'Error',
+                message: '第三方体检数据库连接异常，请检查 THIRD_DB_* 配置或数据库服务状态',
+                errorCode: 'THIRD_DB_CONNECTION_ERROR'
+            });
+        }
 
         res.json({
             status: 'Success',
