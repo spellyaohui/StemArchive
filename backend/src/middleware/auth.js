@@ -1,4 +1,5 @@
 const { executeQuery, sql } = require('../../config/database');
+const JwtUtils = require('../utils/jwt');
 
 // JWT验证中间件
 const authMiddleware = async (req, res, next) => {
@@ -12,9 +13,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     try {
-        // 这里应该使用JWT验证，暂时简化处理
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = JwtUtils.verifyToken(token);
 
         // 从数据库获取用户信息
         const query = `
@@ -39,7 +38,7 @@ const authMiddleware = async (req, res, next) => {
     } catch (error) {
         res.status(401).json({
             status: 'Error',
-            message: '无效的认证令牌'
+            message: error.message || '无效的认证令牌'
         });
     }
 };

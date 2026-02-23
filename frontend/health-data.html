@@ -747,23 +747,10 @@
                         }
                     }
 
-                    // 调用第三方API获取检验科数据
-                    const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_laboratory`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...window.EXAMINATION_API_CONFIG.headers
-                        },
-                        body: JSON.stringify({
-                            studyId: examId
-                        })
+                    // 调用主后端API获取检验科数据
+                    result = await window.api.post('/query_laboratory', {
+                        studyId: examId
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    result = await response.json();
 
                     if (result.code === 200 && result.data) {
                         NotificationHelper.success(`成功获取 ${result.data.length} 项检验数据，已自动填充到表单中`, '数据获取成功');
@@ -774,27 +761,12 @@
                                            `检查日期: ${item.CheckDate}, 医生: ${item.Doctor}, 状态标记: ${item.Flag}`);
                         });
 
-                        // 调用本地API获取体检日期
-                        let examDate = null;
-                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
-                        try {
-                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: JSON.stringify({ studyId: examId })
-                            });
-                            const dateResult = await dateResponse.json();
-                            if (dateResult.code === 200 && dateResult.data) {
-                                examDate = dateResult.data;
-                                console.log('✅ 获取到检验科体检日期:', examDate);
-                            } else {
-                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
-                            }
-                        } catch (dateError) {
-                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        // 优先使用查询接口返回的体检日期
+                        let examDate = result.tjrq || null;
+                        if (examDate) {
+                            console.log('✅ 使用查询接口返回的体检日期:', examDate);
+                        } else {
+                            console.warn('⚠️ 查询接口未返回体检日期');
                         }
 
                         // 将数据和检验日期一起填充到表单中
@@ -838,27 +810,12 @@
                             }
                         }
 
-                        // 调用本地API获取体检日期
-                        let examDate = null;
-                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
-                        try {
-                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: JSON.stringify({ studyId: examId })
-                            });
-                            const dateResult = await dateResponse.json();
-                            if (dateResult.code === 200 && dateResult.data) {
-                                examDate = dateResult.data;
-                                console.log('✅ 获取到常规科室体检日期:', examDate);
-                            } else {
-                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
-                            }
-                        } catch (dateError) {
-                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        // 优先使用查询接口返回的体检日期
+                        let examDate = result.tjrq || null;
+                        if (examDate) {
+                            console.log('✅ 使用查询接口返回的常规科室体检日期:', examDate);
+                        } else {
+                            console.warn('⚠️ 常规科室查询接口未返回体检日期');
                         }
 
                         // 将数据和体检日期填充到常规科室表单中
@@ -880,27 +837,12 @@
                             console.log(`    - 检查结论长度: ${item['检查结论'] ? item['检查结论'].length : 0} 字符`);
                         });
 
-                        // 调用本地API获取体检日期
-                        let examDate = null;
-                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
-                        try {
-                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: JSON.stringify({ studyId: examId })
-                            });
-                            const dateResult = await dateResponse.json();
-                            if (dateResult.code === 200 && dateResult.data) {
-                                examDate = dateResult.data;
-                                console.log('✅ 获取到影像科室体检日期:', examDate);
-                            } else {
-                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
-                            }
-                        } catch (dateError) {
-                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        // 优先使用查询接口返回的体检日期
+                        let examDate = result.tjrq || null;
+                        if (examDate) {
+                            console.log('✅ 使用查询接口返回的影像科室体检日期:', examDate);
+                        } else {
+                            console.warn('⚠️ 影像科室查询接口未返回体检日期');
                         }
 
                         // 将数据填充到影像科室表单中
@@ -920,27 +862,12 @@
                             console.log(`  ${index + 1}. StudyID: ${item.StudyID}, 检查结果: ${item['检查结果']}`);
                         });
 
-                        // 调用本地API获取体检日期
-                        let examDate = null;
-                        console.log('📅 调用 /api/get_tjrq 获取体检日期...');
-                        try {
-                            const dateResponse = await fetch(`${CONFIG.api.baseURL}/get_tjrq`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                },
-                                body: JSON.stringify({ studyId: examId })
-                            });
-                            const dateResult = await dateResponse.json();
-                            if (dateResult.code === 200 && dateResult.data) {
-                                examDate = dateResult.data;
-                                console.log('✅ 获取到仪器室体检日期:', examDate);
-                            } else {
-                                console.warn('⚠️ 未获取到体检日期:', dateResult.message);
-                            }
-                        } catch (dateError) {
-                            console.warn('⚠️ 获取体检日期失败:', dateError);
+                        // 优先使用查询接口返回的体检日期
+                        let examDate = result.tjrq || null;
+                        if (examDate) {
+                            console.log('✅ 使用查询接口返回的仪器室体检日期:', examDate);
+                        } else {
+                            console.warn('⚠️ 仪器室查询接口未返回体检日期');
                         }
 
                         // 将数据填充到仪器室表单中
@@ -1260,27 +1187,6 @@
             }
         }
 
-        // 根据科室类型获取API URL
-        async function getExaminationApiUrl(departmentType, identityCard, examId) {
-            const baseUrl = window.EXAMINATION_API_CONFIG.baseURL;
-
-            switch (departmentType) {
-                case 'laboratory':
-                    // 检验科API
-                    return `${baseUrl}/laboratory/examination/${examId}?identityCard=${identityCard}`;
-                case 'general':
-                    // 常规科室API
-                    return `${baseUrl}/general/examination/${examId}?identityCard=${identityCard}`;
-                case 'imaging':
-                    // 影像科室API
-                    return `${baseUrl}/imaging/examination/${examId}?identityCard=${identityCard}`;
-                case 'instrument':
-                    // 仪器室API
-                    return `${baseUrl}/instrument/examination/${examId}?identityCard=${identityCard}`;
-                default:
-                    throw new Error('未知的科室类型');
-            }
-        }
 
         // 显示体检数据模态框
         async function showExaminationDataModal(data, departmentType, examId) {
@@ -1448,26 +1354,13 @@
             showNotification('info', '正在获取检验科数据...');
 
             try {
-                // 调用检验科API获取数据
-                const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_laboratory`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...window.EXAMINATION_API_CONFIG.headers
-                    },
-                    body: JSON.stringify({
-                        studyId: examId
-                    })
+                // 调用主后端API获取检验科数据
+                const result = await window.api.post('/query_laboratory', {
+                    studyId: examId
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-
                 if (result.code === 200 && result.data) {
-                    await fillLaboratoryDataForm(result.data);
+                    await fillLaboratoryDataForm(result.data, result.tjrq || null);
                     closeExaminationDataModal();
                     showNotification('success', `已成功导入 ${result.data.length} 项检验数据`);
                 } else {

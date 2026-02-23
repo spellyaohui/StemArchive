@@ -2,10 +2,17 @@ const jwt = require('jsonwebtoken');
 
 // JWT配置
 const JWT_CONFIG = {
-    secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     algorithm: 'HS256'
 };
+
+function getJwtSecret() {
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.trim().length < 32) {
+        throw new Error('JWT_SECRET未配置或长度不足（至少32位）');
+    }
+    return secret;
+}
 
 /**
  * JWT工具类
@@ -15,7 +22,7 @@ class JwtUtils {
      * 生成访问令牌
      */
     static generateAccessToken(payload) {
-        return jwt.sign(payload, JWT_CONFIG.secret, {
+        return jwt.sign(payload, getJwtSecret(), {
             expiresIn: JWT_CONFIG.expiresIn,
             algorithm: JWT_CONFIG.algorithm
         });
@@ -25,7 +32,7 @@ class JwtUtils {
      * 生成刷新令牌
      */
     static generateRefreshToken(payload) {
-        return jwt.sign(payload, JWT_CONFIG.secret, {
+        return jwt.sign(payload, getJwtSecret(), {
             expiresIn: '7d',
             algorithm: JWT_CONFIG.algorithm
         });
@@ -36,7 +43,7 @@ class JwtUtils {
      */
     static verifyToken(token) {
         try {
-            return jwt.verify(token, JWT_CONFIG.secret, {
+            return jwt.verify(token, getJwtSecret(), {
                 algorithms: [JWT_CONFIG.algorithm]
             });
         } catch (error) {

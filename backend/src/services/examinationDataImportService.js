@@ -4,9 +4,9 @@
  * 支持批量导入和容错处理
  */
 
-const axios = require('axios');
 const { executeQuery } = require('../../config/database');
 const departmentCodeService = require('./departmentCodeService');
+const thirdPartyExaminationService = require('./thirdPartyExaminationService');
 
 /**
  * 将对象参数转换为executeQuery需要的数组格式
@@ -19,20 +19,7 @@ function toParamsArray(params) {
 
 class ExaminationDataImportService {
     constructor() {
-        // 优先使用完整URL配置，其次使用分离的IP端口配置
-        if (process.env.EXAMINATION_API_BASE_URL) {
-            this.apiBaseURL = process.env.EXAMINATION_API_BASE_URL;
-        } else if (process.env.EXAMINATION_API_HOST && process.env.EXAMINATION_API_PORT) {
-            const host = process.env.EXAMINATION_API_HOST;
-            const port = process.env.EXAMINATION_API_PORT;
-            this.apiBaseURL = `http://${host}:${port}/api`;
-        } else {
-            throw new Error('第三方体检API配置缺失');
-        }
-
-        this.timeout = parseInt(process.env.EXAMINATION_API_TIMEOUT) || 10000;
-
-        console.log(`体检数据导入服务初始化完成 - API地址: ${this.apiBaseURL}`);
+        console.log('体检数据导入服务初始化完成 - 数据源: 第三方只读数据库');
     }
 
     /**
@@ -240,16 +227,7 @@ class ExaminationDataImportService {
      */
     async getExaminationDate(examId) {
         try {
-            const url = `${this.apiBaseURL}/get_tjrq`;
-            const response = await axios.post(url, { studyId: examId }, {
-                headers: { 'Content-Type': 'application/json' },
-                timeout: this.timeout
-            });
-
-            if (response.data && response.data.code === 200) {
-                return response.data.data;
-            }
-            return null;
+            return await thirdPartyExaminationService.getExaminationDate(examId);
         } catch (error) {
             console.warn(`获取体检日期失败: ${error.message}`);
             return null;
@@ -264,37 +242,18 @@ class ExaminationDataImportService {
      * @returns {Promise<Object>} API响应数据
      */
     async fetchDepartmentData(examId, code, departmentType) {
-        let url;
-        let payload = { studyId: examId };
-
         switch (departmentType) {
             case 'laboratory':
-                url = `${this.apiBaseURL}/query_laboratory`;
-                break;
+                return thirdPartyExaminationService.queryLaboratory(examId);
             case 'general':
-                url = `${this.apiBaseURL}/query_cgks`;
-                payload.ksbm = code;
-                break;
+                return thirdPartyExaminationService.queryGeneral(examId, code);
             case 'imaging':
-                url = `${this.apiBaseURL}/query_yxk`;
-                payload.ksbm = code;
-                break;
+                return thirdPartyExaminationService.queryImaging(examId, code);
             case 'instrument':
-                url = `${this.apiBaseURL}/query_instrument`;
-                payload.ksbm = code;
-                break;
+                return thirdPartyExaminationService.queryInstrument(examId, code);
             default:
                 throw new Error(`不支持的科室类型: ${departmentType}`);
         }
-
-        console.log(`📡 调用API: ${url}, 参数: ${JSON.stringify(payload)}`);
-
-        const response = await axios.post(url, payload, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: this.timeout
-        });
-
-        return response.data;
     }
 
     /**

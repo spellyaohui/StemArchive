@@ -8,6 +8,44 @@ const API_CONFIG = window.API_CONFIG || window.CONFIG?.api || {
   }
 };
 
+function handleAuthError(status, endpoint = '') {
+  if (status !== 401 && status !== 403) {
+    return;
+  }
+
+  if (endpoint.includes('/auth/login')) {
+    return;
+  }
+
+  if (status === 403) {
+    if (window.NotificationHelper) {
+      window.NotificationHelper.error('权限不足，无法执行当前操作', '认证提示');
+    }
+    return;
+  }
+
+  if (window.__authRedirecting) {
+    return;
+  }
+
+  window.__authRedirecting = true;
+
+  if (window.NotificationHelper) {
+    window.NotificationHelper.error('登录已失效，请重新登录', '认证提示');
+  }
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  setTimeout(() => {
+    if (!window.location.pathname.endsWith('/login.html') && !window.location.pathname.endsWith('login.html')) {
+      window.location.replace('login.html');
+    } else {
+      window.__authRedirecting = false;
+    }
+  }, 300);
+}
+
 // API请求类
 class ApiService {
   constructor() {
@@ -43,6 +81,7 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        handleAuthError(response.status, endpoint);
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -131,6 +170,7 @@ async function fetchWithAuth(endpoint, options = {}) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      handleAuthError(response.status, endpoint);
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
@@ -325,23 +365,10 @@ const HealthAssessmentAPI = {
 const GeneralDepartmentAPI = {
   // 调用常规科室查询接口
   async queryGeneralDepartment(studyId, ksbm) {
-    const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_cgks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...window.EXAMINATION_API_CONFIG.headers
-      },
-      body: JSON.stringify({
-        studyId: studyId,
-        ksbm: ksbm
-      })
+    return apiService.post('/query_cgks', {
+      studyId: studyId,
+      ksbm: ksbm
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
   },
 
   // 保存常规科室数据到后端
@@ -362,23 +389,10 @@ const GeneralDepartmentAPI = {
 const ImagingDepartmentAPI = {
   // 调用影像科室查询接口
   async queryImagingDepartment(studyId, ksbm) {
-    const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_yxk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...window.EXAMINATION_API_CONFIG.headers
-      },
-      body: JSON.stringify({
-        studyId: studyId,
-        ksbm: ksbm
-      })
+    return apiService.post('/query_yxk', {
+      studyId: studyId,
+      ksbm: ksbm
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
   },
 
   // 保存影像科室数据到后端
@@ -399,23 +413,10 @@ const ImagingDepartmentAPI = {
 const InstrumentRoomAPI = {
   // 调用仪器室查询接口
   async queryInstrumentRoom(studyId, ksbm) {
-    const response = await fetch(`${window.EXAMINATION_API_CONFIG.baseURL}/query_instrument`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...window.EXAMINATION_API_CONFIG.headers
-      },
-      body: JSON.stringify({
-        studyId: studyId,
-        ksbm: ksbm
-      })
+    return apiService.post('/query_instrument', {
+      studyId: studyId,
+      ksbm: ksbm
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
   },
 
   // 保存仪器室数据到后端

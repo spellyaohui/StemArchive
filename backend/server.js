@@ -7,11 +7,43 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+const { authMiddleware } = require('./src/middleware/auth');
+const { authLimiter, generalLimiter } = require('./src/middleware/rateLimiter');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+const RATE_LIMIT_ENABLED = (process.env.RATE_LIMIT_ENABLED || 'false').toLowerCase() === 'true';
 
 // 服务器启动时间（用于健康检查）
 const serverStartTime = new Date();
+
+function validateSecurityConfig() {
+    const jwtSecret = process.env.JWT_SECRET;
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!jwtSecret || jwtSecret.trim().length < 32) {
+        throw new Error('JWT_SECRET未配置或长度不足（至少32位）');
+    }
+
+    if (isProduction && /change-in-production|your-secret-key/i.test(jwtSecret)) {
+        throw new Error('生产环境禁止使用弱JWT_SECRET默认值');
+    }
+}
+
+function isPublicApiPath(req) {
+    const method = req.method.toUpperCase();
+    const path = req.path;
+
+    if (method === 'POST' && path === '/auth/login') {
+        return true;
+    }
+
+    if (method === 'GET' && path === '/auth/verify') {
+        return true;
+    }
+
+    return false;
+}
 
 // 初始化系统设置
 async function initializeSystemSettings() {
@@ -129,8 +161,24 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// 上传文件静态服务
-app.use('/uploads', express.static('uploads'));
+// 上传文件访问（受鉴权保护）
+app.use('/uploads', authMiddleware, express.static('uploads'));
+
+// API 限流与全局鉴权（白名单放行）
+if (RATE_LIMIT_ENABLED) {
+    app.use('/api/auth/login', authLimiter);
+    app.use('/api', generalLimiter);
+    console.log('✅ API限流已启用（RATE_LIMIT_ENABLED=true）');
+} else {
+    console.log('ℹ️ API限流已禁用（RATE_LIMIT_ENABLED=false）');
+}
+
+app.use('/api', (req, res, next) => {
+    if (isPublicApiPath(req)) {
+        return next();
+    }
+    return authMiddleware(req, res, next);
+});
 
 // ==================== API 路由 ====================
 // API 路由必须在静态文件服务之前注册，确保 API 优先级
@@ -155,45 +203,7 @@ app.use('/api/treatment-types', require('./src/routes/treatmentTypes'));
 app.use('/api/treatment-effectiveness', require('./src/routes/treatment-effectiveness'));
 app.use('/api/treatment-history', require('./src/routes/treatment-history'));
 app.use('/api/examination-import', require('./src/routes/examinationImport'));
-
-// 体检日期获取API - 统一接口
-app.post('/api/get_tjrq', async (req, res) => {
-  try {
-    const { studyId } = req.body;
-
-    if (!studyId) {
-      return res.status(400).json({
-        status: 'Error',
-        message: 'studyId参数不能为空'
-      });
-    }
-
-    // 使用体检日期服务获取日期
-    const examinationDateService = require('./src/services/examinationDateService');
-    const examinationDate = await examinationDateService.getExaminationDate(studyId);
-
-    if (examinationDate) {
-      res.json({
-        code: 200,
-        data: examinationDate,
-        message: '成功获取体检日期'
-      });
-    } else {
-      res.json({
-        code: 404,
-        data: null,
-        message: '未找到对应的体检日期'
-      });
-    }
-  } catch (error) {
-    console.error('获取体检日期失败:', error);
-    res.status(500).json({
-      code: 500,
-      data: null,
-      message: '获取体检日期失败: ' + error.message
-    });
-  }
-});
+app.use('/api', require('./src/routes/thirdPartyExamination'));
 
 // 测试输注排期查询
 app.get('/api/test-schedules', async (req, res) => {
@@ -455,6 +465,9 @@ app.use((err, req, res, next) => {
 // ==================== 启动服务器 ====================
 async function startServer() {
     try {
+        // 启动前安全配置校验
+        validateSecurityConfig();
+
         // 初始化系统设置
         await initializeSystemSettings();
 

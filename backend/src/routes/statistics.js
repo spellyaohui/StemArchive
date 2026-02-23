@@ -2,6 +2,67 @@ const express = require('express');
 const router = express.Router();
 const { executeQuery, sql } = require('../../config/database');
 
+const DATE_PARAM_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const CUSTOMER_PROFILE_SORT_MAP = {
+    CreatedAt: 'ccp.CreatedAt',
+    UpdatedAt: 'ccp.UpdatedAt',
+    Name: 'ccp.Name',
+    IdentityCard: 'ccp.IdentityCard',
+    ProfileCompletenessScore: 'ccp.ProfileCompletenessScore',
+    HealthAssessmentCount: 'ccp.HealthAssessmentCount',
+    StemCellCount: 'ccp.StemCellCount',
+    ReportCount: 'ccp.ReportCount',
+    TotalInfusionCount: 'ccp.TotalInfusionCount'
+};
+
+function parseYearParam(year) {
+    const parsedYear = parseInt(year, 10);
+    if (!Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+        throw new Error('year参数无效，必须为2000-2100之间的整数');
+    }
+    return parsedYear;
+}
+
+function parsePaginationParam(value, fieldName, defaultValue, min, max) {
+    if (value === undefined || value === null || value === '') {
+        return defaultValue;
+    }
+
+    const parsed = parseInt(value, 10);
+    if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+        throw new Error(`${fieldName}参数无效，必须为${min}-${max}之间的整数`);
+    }
+
+    return parsed;
+}
+
+function parseDateRange(dateFrom, dateTo) {
+    if (!dateFrom && !dateTo) {
+        return null;
+    }
+
+    if (!dateFrom || !dateTo) {
+        throw new Error('dateFrom和dateTo必须同时提供');
+    }
+
+    if (!DATE_PARAM_REGEX.test(dateFrom) || !DATE_PARAM_REGEX.test(dateTo)) {
+        throw new Error('日期格式无效，必须为YYYY-MM-DD');
+    }
+
+    const fromDate = new Date(`${dateFrom}T00:00:00`);
+    const toDate = new Date(`${dateTo}T00:00:00`);
+
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        throw new Error('日期参数无效');
+    }
+
+    if (fromDate > toDate) {
+        throw new Error('dateFrom不能晚于dateTo');
+    }
+
+    return { dateFrom, dateTo };
+}
+
 // 获取仪表板统计数据
 router.get('/dashboard', async (req, res) => {
     try {
@@ -33,10 +94,13 @@ router.get('/dashboard', async (req, res) => {
             const monthlyResult = await executeQuery(`
                 SELECT COUNT(*) as total
                 FROM InfusionSchedules
-                WHERE YEAR(ScheduleDate) = ${currentYear}
-                AND MONTH(ScheduleDate) = ${currentMonth}
+                WHERE YEAR(ScheduleDate) = @currentYear
+                AND MONTH(ScheduleDate) = @currentMonth
                 AND Status = 'Completed'
-            `);
+            `, [
+                { name: 'currentYear', value: currentYear, type: sql.Int },
+                { name: 'currentMonth', value: currentMonth, type: sql.Int }
+            ]);
             monthlyInfusions = monthlyResult[0].total;
         } catch (e) {
             console.log('查询本月回输数失败:', e.message);
@@ -48,9 +112,11 @@ router.get('/dashboard', async (req, res) => {
             const todayResult = await executeQuery(`
                 SELECT COUNT(*) as total
                 FROM InfusionSchedules
-                WHERE CAST(ScheduleDate AS DATE) = '${today}'
+                WHERE CAST(ScheduleDate AS DATE) = @today
                 AND Status IN ('已安排', 'Scheduled', 'In Progress', 'Completed')
-            `);
+            `, [
+                { name: 'today', value: today, type: sql.Date }
+            ]);
             todaySchedules = todayResult[0].total;
         } catch (e) {
             console.log('查询今日排期数失败:', e.message);
@@ -80,7 +146,8 @@ router.get('/dashboard', async (req, res) => {
 // 获取月度统计
 router.get('/monthly', async (req, res) => {
     try {
-        const { year = new Date().getFullYear() } = req.query;
+        const yearParam = req.query.year === undefined ? new Date().getFullYear() : req.query.year;
+        const year = parseYearParam(yearParam);
 
         // 初始化12个月的数据
         const monthlyData = [];
@@ -94,10 +161,12 @@ router.get('/monthly', async (req, res) => {
                     COUNT(*) as infusions,
                     COUNT(DISTINCT PatientID) as patients
                 FROM InfusionSchedules
-                WHERE YEAR(ScheduleDate) = ${year}
+                WHERE YEAR(ScheduleDate) = @year
                 GROUP BY MONTH(ScheduleDate)
                 ORDER BY MONTH(ScheduleDate)
-            `);
+            `, [
+                { name: 'year', value: year, type: sql.Int }
+            ]);
 
             // 构建完整的月度数据
             for (let i = 1; i <= 12; i++) {
@@ -128,9 +197,10 @@ router.get('/monthly', async (req, res) => {
         });
     } catch (error) {
         console.error('获取月度统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && error.message.includes('参数无效');
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取月度统计失败'
+            message: isValidationError ? error.message : '获取月度统计失败'
         });
     }
 });
@@ -139,16 +209,19 @@ router.get('/monthly', async (req, res) => {
 router.get('/treatment-types', async (req, res) => {
     try {
         const { dateFrom, dateTo } = req.query;
+        const dateRange = parseDateRange(dateFrom, dateTo);
 
         let treatmentTypes = [];
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
         try {
-            // 构建查询条件
-            let whereClause = '';
-            if (dateFrom && dateTo) {
-                whereClause = ` WHERE CAST(ScheduleDate AS DATE) BETWEEN '${dateFrom}' AND '${dateTo}'`;
-            }
+            const whereClause = dateRange ? ' WHERE CAST(ScheduleDate AS DATE) BETWEEN @dateFrom AND @dateTo' : '';
+            const queryParams = dateRange
+                ? [
+                    { name: 'dateFrom', value: dateRange.dateFrom, type: sql.Date },
+                    { name: 'dateTo', value: dateRange.dateTo, type: sql.Date }
+                ]
+                : [];
 
             // 查询治疗类型统计
             const result = await executeQuery(`
@@ -159,7 +232,7 @@ router.get('/treatment-types', async (req, res) => {
                 ${whereClause}
                 GROUP BY TreatmentType
                 ORDER BY count DESC
-            `);
+            `, queryParams);
 
             // 计算总数和百分比
             const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -184,9 +257,10 @@ router.get('/treatment-types', async (req, res) => {
         });
     } catch (error) {
         console.error('获取治疗类型统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('dateFrom'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取治疗类型统计失败'
+            message: isValidationError ? error.message : '获取治疗类型统计失败'
         });
     }
 });
@@ -195,15 +269,18 @@ router.get('/treatment-types', async (req, res) => {
 router.get('/diseases', async (req, res) => {
     try {
         const { dateFrom, dateTo } = req.query;
+        const dateRange = parseDateRange(dateFrom, dateTo);
 
         let diseaseStats = [];
 
         try {
-            // 构建查询条件
-            let whereClause = '';
-            if (dateFrom && dateTo) {
-                whereClause = ` WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN '${dateFrom}' AND '${dateTo}'`;
-            }
+            const whereClause = dateRange ? ' WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN @dateFrom AND @dateTo' : '';
+            const queryParams = dateRange
+                ? [
+                    { name: 'dateFrom', value: dateRange.dateFrom, type: sql.Date },
+                    { name: 'dateTo', value: dateRange.dateTo, type: sql.Date }
+                ]
+                : [];
 
             // 查询病种统计
             const result = await executeQuery(`
@@ -214,7 +291,7 @@ router.get('/diseases', async (req, res) => {
                 ${whereClause}
                 GROUP BY sp.PrimaryDiagnosis
                 ORDER BY count DESC
-            `);
+            `, queryParams);
 
             // 计算总数和百分比
             const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -238,9 +315,10 @@ router.get('/diseases', async (req, res) => {
         });
     } catch (error) {
         console.error('获取病种统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('dateFrom'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取病种统计失败'
+            message: isValidationError ? error.message : '获取病种统计失败'
         });
     }
 });
@@ -249,15 +327,18 @@ router.get('/diseases', async (req, res) => {
 router.get('/infusion-counts', async (req, res) => {
     try {
         const { dateFrom, dateTo } = req.query;
+        const dateRange = parseDateRange(dateFrom, dateTo);
 
         let infusionCounts = [];
 
         try {
-            // 构建查询条件
-            let whereClause = '';
-            if (dateFrom && dateTo) {
-                whereClause = ` WHERE CAST(isched.ScheduleDate AS DATE) BETWEEN '${dateFrom}' AND '${dateTo}'`;
-            }
+            const whereClause = dateRange ? ' WHERE CAST(isched.ScheduleDate AS DATE) BETWEEN @dateFrom AND @dateTo' : '';
+            const queryParams = dateRange
+                ? [
+                    { name: 'dateFrom', value: dateRange.dateFrom, type: sql.Date },
+                    { name: 'dateTo', value: dateRange.dateTo, type: sql.Date }
+                ]
+                : [];
 
             // 查询回输次数分布
             const result = await executeQuery(`
@@ -285,7 +366,7 @@ router.get('/infusion-counts', async (req, res) => {
                         WHEN isched.InfusionCount = 3 THEN 3
                         ELSE 4
                     END
-            `);
+            `, queryParams);
 
             // 计算总数和百分比
             const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -309,9 +390,10 @@ router.get('/infusion-counts', async (req, res) => {
         });
     } catch (error) {
         console.error('获取回输次数分布失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('dateFrom'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取回输次数分布失败'
+            message: isValidationError ? error.message : '获取回输次数分布失败'
         });
     }
 });
@@ -320,15 +402,18 @@ router.get('/infusion-counts', async (req, res) => {
 router.get('/age-distribution', async (req, res) => {
     try {
         const { dateFrom, dateTo } = req.query;
+        const dateRange = parseDateRange(dateFrom, dateTo);
 
         let ageDistribution = [];
 
         try {
-            // 构建查询条件
-            let whereClause = '';
-            if (dateFrom && dateTo) {
-                whereClause = ` WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN '${dateFrom}' AND '${dateTo}'`;
-            }
+            const whereClause = dateRange ? ' WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN @dateFrom AND @dateTo' : '';
+            const queryParams = dateRange
+                ? [
+                    { name: 'dateFrom', value: dateRange.dateFrom, type: sql.Date },
+                    { name: 'dateTo', value: dateRange.dateTo, type: sql.Date }
+                ]
+                : [];
 
             // 查询年龄分布统计
             const result = await executeQuery(`
@@ -363,7 +448,7 @@ router.get('/age-distribution', async (req, res) => {
                         WHEN c.Age BETWEEN 61 AND 70 THEN 5
                         ELSE 6
                     END
-            `);
+            `, queryParams);
 
             // 计算总数和百分比
             const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -387,9 +472,10 @@ router.get('/age-distribution', async (req, res) => {
         });
     } catch (error) {
         console.error('获取年龄分布统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('dateFrom'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取年龄分布统计失败'
+            message: isValidationError ? error.message : '获取年龄分布统计失败'
         });
     }
 });
@@ -398,15 +484,18 @@ router.get('/age-distribution', async (req, res) => {
 router.get('/gender-distribution', async (req, res) => {
     try {
         const { dateFrom, dateTo } = req.query;
+        const dateRange = parseDateRange(dateFrom, dateTo);
 
         let genderDistribution = [];
 
         try {
-            // 构建查询条件
-            let whereClause = '';
-            if (dateFrom && dateTo) {
-                whereClause = ` WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN '${dateFrom}' AND '${dateTo}'`;
-            }
+            const whereClause = dateRange ? ' WHERE CAST(sp.RegistrationDate AS DATE) BETWEEN @dateFrom AND @dateTo' : '';
+            const queryParams = dateRange
+                ? [
+                    { name: 'dateFrom', value: dateRange.dateFrom, type: sql.Date },
+                    { name: 'dateTo', value: dateRange.dateTo, type: sql.Date }
+                ]
+                : [];
 
             // 查询性别分布统计
             const result = await executeQuery(`
@@ -418,7 +507,7 @@ router.get('/gender-distribution', async (req, res) => {
                 ${whereClause}
                 GROUP BY c.Gender
                 ORDER BY count DESC
-            `);
+            `, queryParams);
 
             // 计算总数和百分比
             const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -442,9 +531,10 @@ router.get('/gender-distribution', async (req, res) => {
         });
     } catch (error) {
         console.error('获取性别分布统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('dateFrom'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取性别分布统计失败'
+            message: isValidationError ? error.message : '获取性别分布统计失败'
         });
     }
 });
@@ -649,7 +739,20 @@ router.get('/test', async (req, res) => {
  */
 router.get('/customers/complete-profile', async (req, res) => {
     try {
-        const { page = 1, limit = 20, sortBy = 'CreatedAt', sortOrder = 'DESC' } = req.query;
+        const page = parsePaginationParam(req.query.page, 'page', 1, 1, 100000);
+        const limit = parsePaginationParam(req.query.limit, 'limit', 20, 1, 200);
+        const requestedSortBy = req.query.sortBy || 'CreatedAt';
+        const requestedSortOrder = (req.query.sortOrder || 'DESC').toUpperCase();
+
+        const safeSortColumn = CUSTOMER_PROFILE_SORT_MAP[requestedSortBy];
+        if (!safeSortColumn) {
+            throw new Error(`sortBy参数无效，可选值：${Object.keys(CUSTOMER_PROFILE_SORT_MAP).join(', ')}`);
+        }
+
+        if (!['ASC', 'DESC'].includes(requestedSortOrder)) {
+            throw new Error('sortOrder参数无效，必须为ASC或DESC');
+        }
+
         const offset = (page - 1) * limit;
 
         const query = `
@@ -662,7 +765,7 @@ router.get('/customers/complete-profile', async (req, res) => {
                 c.Remarks
             FROM dbo.CustomerCompleteProfile ccp
             INNER JOIN Customers c ON ccp.CustomerID = c.ID
-            ORDER BY ${sortBy} ${sortOrder}
+            ORDER BY ${safeSortColumn} ${requestedSortOrder}
             OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
 
             SELECT COUNT(*) as Total FROM dbo.CustomerCompleteProfile;
@@ -682,17 +785,18 @@ router.get('/customers/complete-profile', async (req, res) => {
             message: '获取检客完整档案统计成功',
             data: customers,
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
+                page,
+                limit,
                 total,
                 totalPages: Math.ceil(total / limit)
             }
         });
     } catch (error) {
         console.error('获取检客完整档案统计失败:', error);
-        res.status(500).json({
+        const isValidationError = error.message && (error.message.includes('参数无效') || error.message.includes('必须为ASC或DESC'));
+        res.status(isValidationError ? 400 : 500).json({
             status: 'Error',
-            message: '获取检客完整档案统计失败'
+            message: isValidationError ? error.message : '获取检客完整档案统计失败'
         });
     }
 });

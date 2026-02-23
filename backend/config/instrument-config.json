@@ -1,0 +1,40 @@
+{
+  "instrumentQueries": {
+    "ELB": {
+      "tableName": "ELB",
+      "resultField": "MValue",
+      "defaultXXDM": "000005",
+      "description": "心电图室"
+    },
+    "EMB": {
+      "tableName": "EMB",
+      "resultField": "CValue",
+      "defaultXXDM": "150109",
+      "description": "骨密度"
+    },
+    "ECB": {
+      "tableName": "ECB",
+      "resultField": "MValue",
+      "defaultXXDM": "970128",
+      "description": "动脉硬化"
+    },
+    "EAB": {
+      "tableName": "EAB",
+      "resultField": "CValue",
+      "defaultXXDM": "150332",
+      "description": "人体成分"
+    },
+    "EFB": {
+      "tableName": "EFB",
+      "resultField": "MValue",
+      "defaultXXDM": "960036",
+      "description": "脑彩超"
+    },
+    "EEB": {
+      "tableName": "EEB",
+      "resultField": "MValue",
+      "defaultXXDM": "940214",
+      "description": "TCT"
+    }
+  }
+}
