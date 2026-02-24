@@ -376,6 +376,36 @@ router.get('/exams', async (req, res) => {
 });
 
 
+// 单次报告PDF生成（后端puppeteer渲染）
+const singleReportPdfService = require('../services/singleReportPdfService');
+
+router.post('/single-report-pdf', async (req, res) => {
+    try {
+        const examData = req.body;
+
+        if (!examData || !examData.departments) {
+            return res.status(400).json({
+                status: 'Error',
+                message: '缺少体检数据'
+            });
+        }
+
+        const pdfBuffer = await singleReportPdfService.generatePdf(examData);
+        const fileName = encodeURIComponent((examData.customerName || '未知检客') + '-体检报告-' + (examData.medicalExamId || '') + '.pdf');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '"');
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.end(pdfBuffer);
+    } catch (error) {
+        console.error('单次报告PDF生成失败:', error);
+        res.status(500).json({
+            status: 'Error',
+            message: '单次报告PDF生成失败: ' + error.message
+        });
+    }
+});
+
 // 获取体检详情 - 单次报告专用
 router.get('/exam-detail', async (req, res) => {
     try {
@@ -493,15 +523,31 @@ router.get('/exam-detail', async (req, res) => {
                 });
             });
 
-            // 构建检验科的AssessmentData JSON
-            const labAssessmentData = Object.values(labDataByCategory).map(category => ({
-                itemName: category.category,
-                itemResult: category.items.map(item =>
-                    `${item.itemName}: ${item.itemResult}${item.itemUnit ? ' ' + item.itemUnit : ''} ${item.referenceValue ? '(参考值: ' + item.referenceValue + ')' : ''}${item.abnormalFlag ? ' [异常]' : ''}`
-                ).join('\n'),
-                departmentName: '检验科',
-                departmentId: 'lab'
-            }));
+            // 构建检验科的AssessmentData JSON（结构化优先，同时保留原文本兜底）
+            const labAssessmentData = Object.values(labDataByCategory).map(category => {
+                const normalizedLabItems = category.items.map(item => {
+                    const normalizedFlag = String(item.abnormalFlag || '') === '2'
+                        ? '偏高'
+                        : (String(item.abnormalFlag || '') === '1' ? '偏低' : (item.abnormalFlag || ''));
+
+                    return {
+                        itemName: item.itemName || '',
+                        resultValue: item.itemResult || '',
+                        resultUnit: item.itemUnit || '',
+                        referenceRange: item.referenceValue || '',
+                        abnormalFlag: item.abnormalFlag || '',
+                        rawText: `${item.itemName || ''}: ${item.itemResult || ''}${item.itemUnit ? ' ' + item.itemUnit : ''}${item.referenceValue ? ' (参考值: ' + item.referenceValue + ')' : ''}${normalizedFlag ? ' [' + normalizedFlag + ']' : ''}`.trim()
+                    };
+                });
+
+                return {
+                    itemName: category.category,
+                    itemResult: normalizedLabItems.map(item => item.rawText).join('\n'),
+                    labItems: normalizedLabItems,
+                    departmentName: '检验科',
+                    departmentId: 'lab'
+                };
+            });
 
             departments.push({
                 department: '检验科',

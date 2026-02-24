@@ -8,6 +8,7 @@
     <link href="css/fontawesome.min.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
     <link href="css/responsive.css" rel="stylesheet">
+    <!-- html2pdf.js 已不再使用，单次报告PDF由后端puppeteer生成 -->
 </head>
 <body class="bg-gray-50">
     <!-- 导航栏 -->
@@ -87,19 +88,19 @@
         <!-- 报告类型选择 -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <button class="report-type-btn bg-orange-100 text-orange-700 p-4 rounded-lg hover:bg-orange-200 transition-colors text-center" data-tab="single">
+                <button class="report-type-btn bg-orange-100 text-orange-700 p-4 rounded-xl border border-orange-200 hover:bg-orange-200 transition-all duration-150 text-center" data-tab="single">
                     <i class="fas fa-file-download text-2xl mb-2"></i>
                     <p class="font-medium">单次报告</p>
                 </button>
-                <button class="report-type-btn bg-purple-100 text-purple-700 p-4 rounded-lg hover:bg-purple-200 transition-colors text-center" data-tab="health">
+                <button class="report-type-btn bg-purple-100 text-purple-700 p-4 rounded-xl border border-purple-200 hover:bg-purple-200 transition-all duration-150 text-center" data-tab="health">
                     <i class="fas fa-file-alt text-2xl mb-2"></i>
                     <p class="font-medium">健康评估</p>
                 </button>
-                <button class="report-type-btn bg-blue-100 text-blue-700 p-4 rounded-lg hover:bg-blue-200 transition-colors text-center" data-tab="comparison">
+                <button class="report-type-btn bg-blue-100 text-blue-700 p-4 rounded-xl border border-blue-200 hover:bg-blue-200 transition-all duration-150 text-center" data-tab="comparison">
                     <i class="fas fa-file-medical text-2xl mb-2"></i>
                     <p class="font-medium">对比报告</p>
                 </button>
-                <button class="report-type-btn bg-green-100 text-green-700 p-4 rounded-lg hover:bg-green-200 transition-colors text-center" data-tab="treatment">
+                <button class="report-type-btn bg-green-100 text-green-700 p-4 rounded-xl border border-green-200 hover:bg-green-200 transition-all duration-150 text-center" data-tab="treatment">
                     <i class="fas fa-chart-line text-2xl mb-2"></i>
                     <p class="font-medium">治疗总结</p>
                 </button>
@@ -138,15 +139,6 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">报告类型</label>
-                        <select id="reportTypeSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="comparison">对比报告</option>
-                            <option value="treatment">治疗总结</option>
-                            <option value="health">健康评估</option>
-                            <option value="single">单次报告</option>
-                        </select>
-                    </div>
-                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2" id="dateRangeLabel">数据日期范围</label>
                         <div class="flex space-x-2 items-center">
                             <input type="date" id="dateRangeStart"
@@ -166,11 +158,23 @@
                 <!-- 单次报告专用 - 体检ID选择区域 -->
                 <div id="singleReportSection" class="hidden">
                     <div class="border-t pt-4">
-                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择体检报告</h4>
+                        <h4 class="text-md font-semibold text-gray-700 mb-3">选择体检报告（单选）</h4>
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">选择体检报告</label>
-                                <select id="examSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">可选体检报告</label>
+                                <div id="selectedSingleExamBadge" class="hidden mb-3">
+                                    <div class="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                                        <span class="text-xs text-blue-600 mr-2"><i class="fas fa-check-circle"></i></span>
+                                        <span class="text-sm text-blue-800">当前已选：<span id="selectedSingleExamText" class="font-semibold"></span></span>
+                                    </div>
+                                </div>
+                                <div id="singleExamList" class="max-h-72 overflow-y-auto border border-gray-200 rounded-xl p-3 bg-gray-50">
+                                    <div class="text-center text-gray-500 py-4">
+                                        <i class="fas fa-search text-2xl mb-2"></i>
+                                        <p>请先设置日期范围并搜索体检报告</p>
+                                    </div>
+                                </div>
+                                <select id="examSelect" class="hidden" disabled>
                                     <option value="">请先搜索体检报告</option>
                                 </select>
                             </div>

@@ -33,7 +33,7 @@ class ReportsManager {
 
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
-    
+
     try {
       loadingNotification = NotificationHelper.loading('正在搜索检客...');
 
@@ -51,8 +51,8 @@ class ReportsManager {
         const filteredCustomers = response.data.filter(customer => {
           const searchTerm = query.toLowerCase();
           return customer.Name.toLowerCase().includes(searchTerm) ||
-                           customer.IdentityCard.includes(searchTerm) ||
-                           (customer.Phone && customer.Phone.includes(searchTerm));
+            customer.IdentityCard.includes(searchTerm) ||
+            (customer.Phone && customer.Phone.includes(searchTerm));
         });
 
         this.showCustomerSearchResults(filteredCustomers);
@@ -61,13 +61,13 @@ class ReportsManager {
       }
     } catch (error) {
       console.error('搜索检客失败:', error);
-      
+
       // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
         loadingNotification = null;
       }
-      
+
       NotificationHelper.error('搜索检客失败');
     }
   }
@@ -75,7 +75,7 @@ class ReportsManager {
   // 显示搜索结果
   showCustomerSearchResults(customers) {
     const resultsContainer = document.getElementById('customerSearchResults');
-    if (!resultsContainer) {return;}
+    if (!resultsContainer) { return; }
 
     if (customers.length === 0) {
       resultsContainer.innerHTML = `
@@ -213,9 +213,36 @@ class ReportsManager {
     this.selectedCustomer = null;
     const selectedInfo = document.getElementById('selectedCustomerInfo');
     const searchInput = document.getElementById('customerSearchInput');
+    const examSelect = document.getElementById('examSelect');
+    const singleExamList = document.getElementById('singleExamList');
+    const selectedSingleExamBadge = document.getElementById('selectedSingleExamBadge');
+    const selectedSingleExamText = document.getElementById('selectedSingleExamText');
 
-    if (selectedInfo) {selectedInfo.classList.add('hidden');}
-    if (searchInput) {searchInput.value = '';}
+    if (selectedInfo) { selectedInfo.classList.add('hidden'); }
+    if (searchInput) { searchInput.value = ''; }
+
+    if (examSelect) {
+      examSelect.innerHTML = '<option value="">请先搜索体检报告</option>';
+      examSelect.disabled = true;
+      examSelect.value = '';
+    }
+
+    if (singleExamList) {
+      singleExamList.innerHTML = `
+        <div class="text-center text-gray-500 py-4">
+          <i class="fas fa-search text-2xl mb-2"></i>
+          <p>请先设置日期范围并搜索体检报告</p>
+        </div>
+      `;
+    }
+
+    if (selectedSingleExamBadge) {
+      selectedSingleExamBadge.classList.add('hidden');
+    }
+    if (selectedSingleExamText) {
+      selectedSingleExamText.textContent = '';
+    }
+
     this.hideCustomerSearchResults();
   }
 
@@ -343,7 +370,7 @@ class ReportsManager {
   // 渲染报告列表
   renderReportsList() {
     const container = document.getElementById('reportsList');
-    if (!container) {return;}
+    if (!container) { return; }
 
     if (this.reports.length === 0) {
       container.innerHTML = `
@@ -427,7 +454,7 @@ class ReportsManager {
       if (typeof dateString === 'string') {
         // 数据库返回的时间已经是北京时间，不需要时区转换
         // 格式如: "2025-12-20 19:55:47.4100000" 或 "2025-12-20T19:55:47.410Z"
-        
+
         // 如果包含 'Z' 或 '+' 表示有时区信息，直接解析
         if (dateString.includes('Z') || dateString.includes('+')) {
           date = new Date(dateString);
@@ -628,7 +655,7 @@ class ReportsManager {
   async convertToPdf(id) {
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
-    
+
     try {
       const report = this.reports.find(r => r.id === id);
       console.log('转换PDF - 报告信息:', report);
@@ -688,13 +715,13 @@ class ReportsManager {
       }
     } catch (error) {
       console.error('转换PDF失败:', error);
-      
+
       // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
         loadingNotification = null;
       }
-      
+
       NotificationHelper.error('转换PDF失败，请稍后重试');
     }
   }
@@ -702,7 +729,7 @@ class ReportsManager {
   // 显示报告模态框
   showReportModal(report) {
     const modalContainer = document.getElementById('modalContainer');
-    if (!modalContainer) {return;}
+    if (!modalContainer) { return; }
 
     modalContainer.innerHTML = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -758,7 +785,7 @@ class ReportsManager {
 
   // 生成报告
   async generateReport() {
-    const reportType = document.getElementById('reportTypeSelect').value;
+    const reportType = this.selectedReportType;
 
     // 基础验证
     if (!this.selectedCustomer || !reportType) {
@@ -860,10 +887,10 @@ class ReportsManager {
       }
 
       // 使用AI进度通知
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('正在与 DeepSeek AI 通信，生成健康评估报告...', {
-            title: 'AI 健康评估'
-          })
+          title: 'AI 健康评估'
+        })
         : NotificationHelper.loading('正在生成健康评估...');
 
       const generateData = {
@@ -915,13 +942,13 @@ class ReportsManager {
   pollHealthAssessmentStatus(reportId, aiNotification = null) {
     // 保存通知引用到实例变量，确保不会丢失
     const notification = aiNotification;
-    
+
     // 如果没有传入AI通知，创建一个处理中的通知
     const activeNotification = notification || (
-      (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('健康评估正在生成中...', {
-            title: 'AI 健康评估'
-          })
+          title: 'AI 健康评估'
+        })
         : null
     );
 
@@ -931,7 +958,7 @@ class ReportsManager {
 
     const pollInterval = setInterval(async () => {
       pollCount++;
-      
+
       // 超过最大轮询次数，停止轮询
       if (pollCount > maxPollCount) {
         clearInterval(pollInterval);
@@ -952,7 +979,7 @@ class ReportsManager {
 
           if (report.GenerationStatus === 'completed') {
             clearInterval(pollInterval);
-            
+
             // 先关闭通知，再显示报告
             if (activeNotification && activeNotification.complete) {
               activeNotification.complete('健康评估生成完成！', true);
@@ -960,15 +987,15 @@ class ReportsManager {
               NotificationHelper.clearProcessing();
               NotificationHelper.success('健康评估生成完成', '生成成功');
             }
-            
+
             // 延迟显示报告，确保通知已经开始关闭动画
             setTimeout(() => {
               self.viewHealthAssessmentReport(reportId);
             }, 500);
-            
+
           } else if (report.GenerationStatus === 'failed') {
             clearInterval(pollInterval);
-            
+
             if (activeNotification && activeNotification.complete) {
               activeNotification.complete('健康评估生成失败，请重试', false);
             } else {
@@ -985,7 +1012,7 @@ class ReportsManager {
       } catch (error) {
         clearInterval(pollInterval);
         console.error('轮询健康评估状态失败:', error);
-        
+
         if (activeNotification && activeNotification.complete) {
           activeNotification.complete('轮询状态失败，请刷新页面查看结果', false);
         } else {
@@ -1016,12 +1043,12 @@ class ReportsManager {
   // 显示健康评估模态框
   showHealthAssessmentModal(report) {
     const modalContainer = document.getElementById('modalContainer');
-    if (!modalContainer) {return;}
+    if (!modalContainer) { return; }
 
     // 格式化处理时间
     const formatProcessingTime = (seconds) => {
-      if (!seconds) {return '未知';}
-      if (seconds < 60) {return `${seconds}秒`;}
+      if (!seconds) { return '未知'; }
+      if (seconds < 60) { return `${seconds}秒`; }
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes}分${remainingSeconds}秒`;
@@ -1030,10 +1057,10 @@ class ReportsManager {
     // 获取状态显示
     const getStatusDisplay = (status) => {
       switch (status) {
-      case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
-      case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
-      case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
-      default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
+        case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
+        case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
+        case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
+        default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
       }
     };
 
@@ -1230,7 +1257,7 @@ class ReportsManager {
   async downloadPDF(reportId) {
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
-    
+
     try {
       // 显示转换提示
       loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
@@ -1363,54 +1390,89 @@ class ReportsManager {
       return;
     }
 
-    const customerId = this.selectedCustomer.id;
-    const examId = document.getElementById('examSelect').value;
+    var customerId = this.selectedCustomer.id;
+    var examSelect = document.getElementById('examSelect');
+    var examId = examSelect ? examSelect.value : '';
 
     if (!examId) {
-      NotificationHelper.error('请选择体检报告');
+      NotificationHelper.error('请选择体检报告卡片');
       return;
     }
 
-    let loadingNotification = null;
+    var loadingNotification = null;
     try {
       loadingNotification = NotificationHelper.loading('正在生成单次报告...');
 
       // 获取体检详细信息
-      const response = await window.API.service.get(`/reports/exam-detail?customerId=${customerId}&examId=${examId}`);
+      var response = await window.API.service.get('/reports/exam-detail?customerId=' + customerId + '&examId=' + examId);
 
       if (response.status === 'Success') {
-        const examData = response.data;
+        var examData = response.data;
 
-        // 生成Markdown报告
-        const markdownContent = this.generateSingleReportMarkdown(examData);
+        if (loadingNotification && loadingNotification.updateStatus) {
+          loadingNotification.updateStatus('正在为您生成排版精美的 PDF 报告...');
+        }
 
-        // 直接下载Markdown文件
-        const customerName = examData.customerName || '未知检客';
-        const fileName = `${customerName}-体检报告-${examId}.md`;
+        // 调用后端接口生成PDF
+        await this.downloadPdfReport(examData);
 
-        this.downloadMarkdownFile(markdownContent, fileName);
-
-        // 隐藏loading通知
-        if (loadingNotification) {
+        if (loadingNotification && loadingNotification.remove) {
           loadingNotification.remove();
         }
 
-        NotificationHelper.success('单次报告下载成功');
+        NotificationHelper.success('单次报告 PDF 下载成功');
       } else {
-        // 隐藏loading通知
-        if (loadingNotification) {
+        if (loadingNotification && loadingNotification.remove) {
           loadingNotification.remove();
         }
         NotificationHelper.error(response.message || '获取体检详情失败');
       }
     } catch (error) {
       console.error('生成单次报告失败:', error);
-      // 隐藏loading通知
       if (loadingNotification) {
         loadingNotification.remove();
       }
       NotificationHelper.error('生成单次报告失败');
     }
+  }
+
+  // 生成并下载PDF报告
+  // 调用后端接口生成并下载单次报告PDF
+  async downloadPdfReport(examData) {
+    var token = localStorage.getItem('token');
+    var baseURL = window.API.service.baseURL || '/api';
+    var resp = await fetch(baseURL + '/reports/single-report-pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? 'Bearer ' + token : ''
+      },
+      body: JSON.stringify(examData)
+    });
+
+    if (!resp.ok) {
+      var errData = {};
+      try { errData = await resp.json(); } catch (e) { /* ignore */ }
+      throw new Error(errData.message || 'PDF生成失败，HTTP ' + resp.status);
+    }
+
+    var blob = await resp.blob();
+    // 从 Content-Disposition 中提取文件名
+    var disposition = resp.headers.get('Content-Disposition') || '';
+    var fileName = '体检报告.pdf';
+    var match = disposition.match(/filename="?([^"]+)"?/);
+    if (match && match[1]) {
+      fileName = decodeURIComponent(match[1]);
+    }
+
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   // 下载Markdown文件
@@ -1455,8 +1517,8 @@ class ReportsManager {
     const currentDate = Utils.formatDate(new Date(), 'YYYY-MM-DD');
 
     switch (type) {
-    case 'comparison':
-      return `${customerName} 健康对比报告
+      case 'comparison':
+        return `${customerName} 健康对比报告
 
 生成日期: ${currentDate}
 
@@ -1479,8 +1541,8 @@ class ReportsManager {
 
 注: 本报告基于系统数据自动生成，仅供参考。`;
 
-    case 'treatment':
-      return `${customerName} 治疗总结报告
+      case 'treatment':
+        return `${customerName} 治疗总结报告
 
 生成日期: ${currentDate}
 
@@ -1506,8 +1568,8 @@ class ReportsManager {
 2. 定期复查评估
 3. 遵医嘱进行后续治疗`;
 
-    case 'health':
-      return `${customerName} 健康评估报告
+      case 'health':
+        return `${customerName} 健康评估报告
 
 生成日期: ${currentDate}
 
@@ -1533,30 +1595,57 @@ class ReportsManager {
 结论:
 患者目前健康状况稳定，建议继续保持健康的生活方式。`;
 
-    default:
-      return '报告内容生成中...';
+      default:
+        return '报告内容生成中...';
     }
   }
 
   // 生成报告摘要
   generateReportSummary(type) {
     switch (type) {
-    case 'comparison':
-      return '健康指标对比分析显示整体状况良好，各项指标呈现积极变化趋势。';
-    case 'treatment':
-      return '干细胞治疗效果显著，患者症状得到明显改善，生活质量有所提升。';
-    case 'health':
-      return '整体健康状况良好，无明显异常发现，建议继续保持健康的生活方式。';
-    default:
-      return '报告摘要生成中...';
+      case 'comparison':
+        return '健康指标对比分析显示整体状况良好，各项指标呈现积极变化趋势。';
+      case 'treatment':
+        return '干细胞治疗效果显著，患者症状得到明显改善，生活质量有所提升。';
+      case 'health':
+        return '整体健康状况良好，无明显异常发现，建议继续保持健康的生活方式。';
+      default:
+        return '报告摘要生成中...';
     }
   }
 
   // 清空表单
   clearForm() {
     const form = document.getElementById('reportForm');
+    const examSelect = document.getElementById('examSelect');
+    const singleExamList = document.getElementById('singleExamList');
+    const selectedSingleExamBadge = document.getElementById('selectedSingleExamBadge');
+    const selectedSingleExamText = document.getElementById('selectedSingleExamText');
+
     if (form) {
       form.reset();
+    }
+
+    if (examSelect) {
+      examSelect.value = '';
+      examSelect.innerHTML = '<option value="">请先搜索体检报告</option>';
+      examSelect.disabled = true;
+    }
+
+    if (singleExamList) {
+      singleExamList.innerHTML = `
+        <div class="text-center text-gray-500 py-4">
+          <i class="fas fa-search text-2xl mb-2"></i>
+          <p>请先设置日期范围并搜索体检报告</p>
+        </div>
+      `;
+    }
+
+    if (selectedSingleExamBadge) {
+      selectedSingleExamBadge.classList.add('hidden');
+    }
+    if (selectedSingleExamText) {
+      selectedSingleExamText.textContent = '';
     }
   }
 
@@ -1665,13 +1754,6 @@ class ReportsManager {
       historySection.style.display = 'none';
     }
 
-    // 报告类型选择变化
-    const reportTypeSelect = document.getElementById('reportTypeSelect');
-    if (reportTypeSelect) {
-      reportTypeSelect.addEventListener('change', (e) => {
-        this.selectReportType(e.target.value);
-      });
-    }
 
     // 日期范围搜索按钮
     const dateRangeSearchBtn = document.getElementById('dateRangeSearchBtn');
@@ -1789,33 +1871,61 @@ class ReportsManager {
   selectReportType(type) {
     this.selectedReportType = type;
 
-    // 更新按钮样式 - 修正按钮顺序匹配HTML中的实际顺序
+    // 更新按钮样式（更清晰但克制的选中态）
     document.querySelectorAll('.report-type-btn').forEach((btn) => {
       const btnType = btn.getAttribute('data-tab');
+
+      // 先清理选中态通用样式
+      btn.classList.remove(
+        'ring-2',
+        'ring-offset-1',
+        'shadow-md',
+        'transform',
+        '-translate-y-0.5',
+        'ring-orange-400',
+        'ring-purple-400',
+        'ring-blue-400',
+        'ring-green-400',
+        'bg-orange-200',
+        'bg-purple-200',
+        'bg-blue-200',
+        'bg-green-200'
+      );
+
+      // 各色系边框基础态（保证未选中也有柔和边界）
+      btn.classList.remove('border-orange-300', 'border-purple-300', 'border-blue-300', 'border-green-300');
+      if (btnType === 'single') {
+        btn.classList.add('border-orange-200');
+      } else if (btnType === 'health') {
+        btn.classList.add('border-purple-200');
+      } else if (btnType === 'comparison') {
+        btn.classList.add('border-blue-200');
+      } else if (btnType === 'treatment') {
+        btn.classList.add('border-green-200');
+      }
+
       if (btnType === type) {
-        // 移除所有可能的样式类
-        btn.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-200', 'ring-purple-500', 'bg-purple-200', 'ring-blue-500', 'bg-blue-200', 'ring-green-500', 'bg-green-200');
-        // 根据按钮类型添加对应的激活样式
+        btn.classList.add('ring-2', 'ring-offset-1', 'shadow-md', 'transform', '-translate-y-0.5');
+
         if (type === 'single') {
-          btn.classList.add('ring-2', 'ring-orange-500', 'bg-orange-200');
+          btn.classList.remove('border-orange-200');
+          btn.classList.add('ring-orange-400', 'border-orange-300', 'bg-orange-200');
         } else if (type === 'health') {
-          btn.classList.add('ring-2', 'ring-purple-500', 'bg-purple-200');
+          btn.classList.remove('border-purple-200');
+          btn.classList.add('ring-purple-400', 'border-purple-300', 'bg-purple-200');
         } else if (type === 'comparison') {
-          btn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-200');
+          btn.classList.remove('border-blue-200');
+          btn.classList.add('ring-blue-400', 'border-blue-300', 'bg-blue-200');
         } else if (type === 'treatment') {
-          btn.classList.add('ring-2', 'ring-green-500', 'bg-green-200');
+          btn.classList.remove('border-green-200');
+          btn.classList.add('ring-green-400', 'border-green-300', 'bg-green-200');
         }
       } else {
-        // 移除所有激活样式
-        btn.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-200', 'ring-purple-500', 'bg-purple-200', 'ring-blue-500', 'bg-blue-200', 'ring-green-500', 'bg-green-200');
+        // 未选中项去掉各色 ring 和过深边框
+        btn.classList.remove('ring-orange-400', 'ring-purple-400', 'ring-blue-400', 'ring-green-400');
       }
     });
 
-    // 自动选择下拉框
-    const reportTypeSelect = document.getElementById('reportTypeSelect');
-    if (reportTypeSelect) {
-      reportTypeSelect.value = type;
-    }
 
     // 更新报告标题
     const reportTitle = document.getElementById('reportTitle');
@@ -1925,25 +2035,25 @@ class ReportsManager {
 
     // 根据报告类型设置不同的默认开始日期
     switch (type) {
-    case 'single':
-      // 单次报告：默认搜索最近6个月的体检报告
-      startDate.setMonth(startDate.getMonth() - 6);
-      break;
-    case 'comparison':
-      // 对比报告：默认搜索最近3个月的数据
-      startDate.setMonth(startDate.getMonth() - 3);
-      break;
-    case 'treatment':
-      // 治疗总结：默认搜索最近6个月的治疗数据
-      startDate.setMonth(startDate.getMonth() - 6);
-      break;
-    case 'health':
-      // 健康评估：默认搜索最近1年的健康数据
-      startDate.setFullYear(startDate.getFullYear() - 1);
-      break;
-    default:
-      // 默认最近1个月
-      startDate.setMonth(startDate.getMonth() - 1);
+      case 'single':
+        // 单次报告：默认搜索最近6个月的体检报告
+        startDate.setMonth(startDate.getMonth() - 6);
+        break;
+      case 'comparison':
+        // 对比报告：默认搜索最近3个月的数据
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case 'treatment':
+        // 治疗总结：默认搜索最近6个月的治疗数据
+        startDate.setMonth(startDate.getMonth() - 6);
+        break;
+      case 'health':
+        // 健康评估：默认搜索最近1年的健康数据
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        // 默认最近1个月
+        startDate.setMonth(startDate.getMonth() - 1);
     }
 
     const startDateStr = startDate.toISOString().split('T')[0];
@@ -2052,7 +2162,7 @@ class ReportsManager {
   // 填充健康评估体检选择框
   populateHealthExamSelect(exams) {
     const examSelect = document.getElementById('healthExamSelect');
-    if (!examSelect) {return;}
+    if (!examSelect) { return; }
 
     if (exams.length === 0) {
       examSelect.innerHTML = '<option value="">未找到体检报告</option>';
@@ -2061,15 +2171,15 @@ class ReportsManager {
     }
 
     examSelect.innerHTML = '<option value="">请选择体检报告</option>' +
-            exams.map(exam => {
-              // 计算该体检ID包含的科室数量
-              const departmentCount = exam.DepartmentCount || 1;
-              const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
-              const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
-              return `<option value="${medicalExamId}">
+      exams.map(exam => {
+        // 计算该体检ID包含的科室数量
+        const departmentCount = exam.DepartmentCount || 1;
+        const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
+        const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
+        return `<option value="${medicalExamId}">
                     ${medicalExamId} - ${examDate} (${departmentCount}个科室)
                 </option>`;
-            }).join('');
+      }).join('');
 
     examSelect.disabled = false;
 
@@ -2146,29 +2256,113 @@ class ReportsManager {
     }
   }
 
-  // 填充体检选择框
+  // 填充单次报告体检卡片（保留隐藏select用于兼容）
   populateExamSelect(exams) {
     const examSelect = document.getElementById('examSelect');
-    if (!examSelect) {return;}
+    const singleExamList = document.getElementById('singleExamList');
+    const selectedSingleExamBadge = document.getElementById('selectedSingleExamBadge');
+    const selectedSingleExamText = document.getElementById('selectedSingleExamText');
+    if (!examSelect || !singleExamList) { return; }
 
-    if (exams.length === 0) {
-      examSelect.innerHTML = '<option value="">未找到体检报告</option>';
-      examSelect.disabled = true;
+    // 先重置隐藏select（兼容现有生成逻辑）
+    examSelect.innerHTML = '<option value="">请选择体检报告</option>';
+    examSelect.disabled = true;
+    examSelect.value = '';
+
+    if (selectedSingleExamBadge) {
+      selectedSingleExamBadge.classList.add('hidden');
+    }
+    if (selectedSingleExamText) {
+      selectedSingleExamText.textContent = '';
+    }
+
+    if (!Array.isArray(exams) || exams.length === 0) {
+      singleExamList.innerHTML = `
+        <div class="text-center text-gray-500 py-4">
+          <i class="fas fa-search text-2xl mb-2"></i>
+          <p>未找到体检报告</p>
+        </div>
+      `;
       return;
     }
 
+    // 填充隐藏select选项，保持兼容
     examSelect.innerHTML = '<option value="">请选择体检报告</option>' +
-            exams.map(exam => {
-              // 计算该体检ID包含的科室数量
-              const departmentCount = exam.DepartmentCount || 1;
-              const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
-              const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
-              return `<option value="${medicalExamId}">
-                    ${medicalExamId} - ${examDate} (${departmentCount}个科室)
-                </option>`;
-            }).join('');
+      exams.map(exam => {
+        const departmentCount = exam.DepartmentCount || 1;
+        const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
+        const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
+        return `<option value="${medicalExamId}">${medicalExamId} - ${examDate} (${departmentCount}个科室)</option>`;
+      }).join('');
 
     examSelect.disabled = false;
+
+    // 渲染卡牌列表（短卡风格）
+    singleExamList.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        ${exams.map((exam) => {
+          const departmentCount = exam.DepartmentCount || 1;
+          const examDate = exam.ExamDate ? Utils.formatDate(exam.ExamDate, 'YYYY-MM-DD') : '未知日期';
+          const medicalExamId = exam.MedicalExamID || exam.medicalExamId;
+          const safeExamId = String(medicalExamId || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+          return `
+            <div class="single-exam-card group p-3 border border-gray-200 rounded-xl cursor-pointer transition-all duration-150 bg-white hover:shadow-sm hover:border-blue-200"
+                 data-exam-id="${safeExamId}"
+                 data-exam-date="${examDate}">
+              <div class="flex items-start justify-between">
+                <div class="min-w-0">
+                  <div class="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs mb-2">体检编号</div>
+                  <div class="text-sm font-semibold text-gray-900 truncate">${medicalExamId}</div>
+                </div>
+                <div class="single-exam-check opacity-0 text-blue-500 transition-opacity ml-2">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+              <div class="mt-2 text-xs text-gray-600 space-y-1">
+                <div><i class="fas fa-calendar-alt mr-1 text-gray-400"></i>${examDate}</div>
+                <div><i class="fas fa-hospital mr-1 text-gray-400"></i>${departmentCount} 个科室</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    // 绑定卡片单选事件
+    const cards = singleExamList.querySelectorAll('.single-exam-card');
+    cards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const selectedExamId = card.getAttribute('data-exam-id') || '';
+        const selectedExamDate = card.getAttribute('data-exam-date') || '未知日期';
+
+        // 更新隐藏select值
+        examSelect.value = selectedExamId;
+
+        // 更新卡片样式（单选）
+        cards.forEach((c) => {
+          c.classList.remove('border-blue-300', 'bg-blue-50', 'shadow-sm');
+          c.classList.add('border-gray-200', 'bg-white');
+          const check = c.querySelector('.single-exam-check');
+          if (check) {
+            check.classList.add('opacity-0');
+          }
+        });
+
+        card.classList.remove('border-gray-200', 'bg-white');
+        card.classList.add('border-blue-300', 'bg-blue-50', 'shadow-sm');
+        const selectedCheck = card.querySelector('.single-exam-check');
+        if (selectedCheck) {
+          selectedCheck.classList.remove('opacity-0');
+        }
+
+        // 顶部短卡提示
+        if (selectedSingleExamBadge && selectedSingleExamText) {
+          selectedSingleExamText.textContent = `${selectedExamId}（${selectedExamDate}）`;
+          selectedSingleExamBadge.classList.remove('hidden');
+        }
+      });
+    });
   }
 
   // 生成Markdown格式的单次报告
@@ -2193,9 +2387,9 @@ class ReportsManager {
         const order = ['检验科', '彩超室', '心电图室', '放射科', '内科', '外科', '眼科', '耳鼻喉科', '口腔科'];
         const aIndex = order.indexOf(a.department);
         const bIndex = order.indexOf(b.department);
-        if (aIndex === -1 && bIndex === -1) {return a.department.localeCompare(b.department);}
-        if (aIndex === -1) {return 1;}
-        if (bIndex === -1) {return -1;}
+        if (aIndex === -1 && bIndex === -1) { return a.department.localeCompare(b.department); }
+        if (aIndex === -1) { return 1; }
+        if (bIndex === -1) { return -1; }
         return aIndex - bIndex;
       });
 
@@ -2265,7 +2459,7 @@ class ReportsManager {
 
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
-    
+
     try {
       loadingNotification = NotificationHelper.loading('正在搜索体检数据...');
 
@@ -2308,13 +2502,13 @@ class ReportsManager {
 
     } catch (error) {
       console.error('搜索对比体检数据失败:', error);
-      
+
       // 关闭加载提示
       if (loadingNotification) {
         loadingNotification.remove();
         loadingNotification = null;
       }
-      
+
       NotificationHelper.error('搜索体检数据失败');
     }
   }
@@ -2322,7 +2516,7 @@ class ReportsManager {
   // 渲染对比报告体检列表
   renderComparisonExamList() {
     const container = document.getElementById('comparisonExamList');
-    if (!container) {return;}
+    if (!container) { return; }
 
     if (this.availableExams.length === 0) {
       container.innerHTML = `
@@ -2361,7 +2555,7 @@ class ReportsManager {
   // 切换对比报告体检选择
   toggleComparisonExam(examId) {
     const exam = this.availableExams.find(e => e.id === examId);
-    if (!exam) {return;}
+    if (!exam) { return; }
 
     const selectedIndex = this.selectedComparisonExams.findIndex(e => e.id === examId);
 
@@ -2387,7 +2581,7 @@ class ReportsManager {
     const container = document.getElementById('selectedComparisonExams');
     const listContainer = document.getElementById('selectedComparisonList');
 
-    if (!container || !listContainer) {return;}
+    if (!container || !listContainer) { return; }
 
     if (this.selectedComparisonExams.length === 0) {
       container.classList.add('hidden');
@@ -2471,10 +2665,10 @@ class ReportsManager {
 
     try {
       // 使用AI进度通知
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('正在与 DeepSeek AI 通信，生成健康对比分析报告...', {
-            title: 'AI 对比分析'
-          })
+          title: 'AI 对比分析'
+        })
         : NotificationHelper.loading('正在生成对比报告...');
 
       const medicalExamIds = this.selectedComparisonExams.map(exam => exam.id);
@@ -2548,10 +2742,10 @@ class ReportsManager {
 
     // 如果没有传入AI通知，创建一个
     if (!aiNotification) {
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('对比报告正在生成中...', {
-            title: 'AI 对比分析'
-          })
+          title: 'AI 对比分析'
+        })
         : null;
     }
 
@@ -2582,7 +2776,7 @@ class ReportsManager {
             }
             return;
           }
-          
+
           // 继续轮询 - 更新状态提示
           if (aiNotification && aiNotification.updateStatus && attempts % 3 === 0) {
             const messages = [
@@ -2634,12 +2828,12 @@ class ReportsManager {
   // 显示对比报告模态框
   showComparisonReportModal(report) {
     const modalContainer = document.getElementById('modalContainer');
-    if (!modalContainer) {return;}
+    if (!modalContainer) { return; }
 
     // 格式化处理时间
     const formatProcessingTime = (seconds) => {
-      if (!seconds) {return '未知';}
-      if (seconds < 60) {return `${seconds}秒`;}
+      if (!seconds) { return '未知'; }
+      if (seconds < 60) { return `${seconds}秒`; }
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes}分${remainingSeconds}秒`;
@@ -2648,10 +2842,10 @@ class ReportsManager {
     // 获取状态显示
     const getStatusDisplay = (status) => {
       switch (status) {
-      case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
-      case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
-      case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
-      default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
+        case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
+        case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
+        case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
+        default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
       }
     };
 
@@ -2820,7 +3014,7 @@ class ReportsManager {
   async downloadComparisonPDF(reportId) {
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
-    
+
     try {
       loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
 
@@ -2983,10 +3177,10 @@ class ReportsManager {
 
     try {
       // 使用AI进度通知
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('正在与 DeepSeek AI 通信，生成治疗总结报告...', {
-            title: 'AI 治疗总结'
-          })
+          title: 'AI 治疗总结'
+        })
         : NotificationHelper.loading('正在生成治疗总结报告...');
 
       const generateData = {
@@ -3036,10 +3230,10 @@ class ReportsManager {
     let attempts = 0;
 
     if (!aiNotification) {
-      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress 
+      aiNotification = (window.EnhancedNotificationHelper || NotificationHelper).aiProgress
         ? window.EnhancedNotificationHelper.aiProgress('治疗总结报告正在生成中...', {
-            title: 'AI 治疗总结'
-          })
+          title: 'AI 治疗总结'
+        })
         : null;
     }
 
@@ -3070,7 +3264,7 @@ class ReportsManager {
             }
             return;
           }
-          
+
           // 继续轮询 - 更新状态提示
           if (aiNotification && aiNotification.updateStatus && attempts % 3 === 0) {
             const messages = [
@@ -3147,10 +3341,10 @@ class ReportsManager {
 
     const getStatusDisplay = (status) => {
       switch (status) {
-      case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
-      case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
-      case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
-      default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
+        case 'completed': return { text: '已完成', color: 'text-green-600 bg-green-50', icon: 'fa-check-circle' };
+        case 'processing': return { text: '生成中', color: 'text-blue-600 bg-blue-50', icon: 'fa-spinner fa-spin' };
+        case 'failed': return { text: '生成失败', color: 'text-red-600 bg-red-50', icon: 'fa-exclamation-triangle' };
+        default: return { text: '未知状态', color: 'text-gray-600 bg-gray-50', icon: 'fa-question-circle' };
       }
     };
 
@@ -3305,7 +3499,7 @@ class ReportsManager {
   // 下载治疗总结报告PDF
   async downloadTreatmentSummaryPDF(reportId) {
     let loadingNotification = null;
-    
+
     try {
       loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
 
