@@ -253,7 +253,7 @@ router.post('/import-single', authMiddleware, async (req, res) => {
         const failedCount = result.failed.length;
 
         const message = `导入完成！成功导入 ${processedCount} 个科室数据，` +
-            `跳过 ${skippedCount} 个未知科室，` +
+            `跳过 ${skippedCount} 个科室，` +
             `${emptyCount} 个科室无数据，` +
             `${failedCount} 个科室导入失败`;
 

@@ -15,7 +15,8 @@ function isValidTableName(tableName) {
 }
 
 function isValidIdentityCard(identityCard) {
-  return /^\d{17}[\dXx]$/.test(identityCard);
+  // 支持标准18位身份证号，末尾可能带B后缀（JZCIS系统格式）
+  return /^\d{17}[\dXx]B?$/.test(identityCard);
 }
 
 async function getExaminationDate(studyId) {
@@ -36,16 +37,23 @@ async function getExaminationIds(identityCard) {
     throw new Error('无效的身份证号码格式');
   }
 
+  // 去掉末尾可能的B后缀，得到纯身份证号
+  const bareId = identityCard.replace(/B$/i, '');
+  const idWithB = bareId + 'B';
+
   const result = await executeThirdPartyReadQuery(
     `
       SELECT JCXX.ID, JCXX.CYRQ
       FROM JCXX
-      WHERE SFZH = @sfzh
+      WHERE (SFZH = @sfzh OR SFZH = @sfzhB)
         AND SFBJ = 1
         AND LEN(CAST(ISNULL(JCXX.YCXM, '') AS VARCHAR(8000))) > 0
       ORDER BY JCXX.CYRQ DESC
     `,
-    [{ name: 'sfzh', value: identityCard }]
+    [
+      { name: 'sfzh', value: bareId },
+      { name: 'sfzhB', value: idWithB }
+    ]
   );
 
   return result.map((row) => row.ID);

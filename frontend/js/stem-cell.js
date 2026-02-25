@@ -445,7 +445,7 @@ class StemCellManager {
                                 <div class="space-y-4">
                                     ${isAdd ? `
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">选择检客 *</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2 required-label">选择检客</label>
                                             <select id="customerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                                 <option value="">请选择检客...</option>
                                                 ${customersOptions}

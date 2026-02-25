@@ -56,16 +56,16 @@ class HealthAssessmentReport {
             { name: 'medicalExamId', value: medicalExamId, type: sql.NVarChar },
             { name: 'reportName', value: reportName, type: sql.NVarChar },
             { name: 'assessmentDate', value: assessmentDate, type: sql.Date },
-            { name: 'originalData', value: originalData, type: sql.NVarChar },
-            { name: 'apiRequest', value: apiRequest, type: sql.NVarChar },
-            { name: 'apiResponse', value: apiResponse, type: sql.NVarChar },
-            { name: 'aiAnalysis', value: aiAnalysis, type: sql.NVarChar },
-            { name: 'markdownContent', value: markdownContent, type: sql.NVarChar },
-            { name: 'apiModel', value: apiModel, type: sql.NVarChar },
-            { name: 'apiTokenCount', value: apiTokenCount, type: sql.Int },
-            { name: 'processingTime', value: processingTime, type: sql.Int },
-            { name: 'generationStatus', value: generationStatus, type: sql.NVarChar },
-            { name: 'createdBy', value: createdBy, type: sql.NVarChar }
+            { name: 'originalData', value: originalData || null, type: sql.NVarChar },
+            { name: 'apiRequest', value: apiRequest || null, type: sql.NVarChar },
+            { name: 'apiResponse', value: apiResponse || null, type: sql.NVarChar },
+            { name: 'aiAnalysis', value: aiAnalysis || null, type: sql.NVarChar },
+            { name: 'markdownContent', value: markdownContent || null, type: sql.NVarChar },
+            { name: 'apiModel', value: apiModel || null, type: sql.NVarChar },
+            { name: 'apiTokenCount', value: apiTokenCount != null ? apiTokenCount : 0, type: sql.Int },
+            { name: 'processingTime', value: processingTime != null ? processingTime : 0, type: sql.Int },
+            { name: 'generationStatus', value: generationStatus || 'pending', type: sql.NVarChar },
+            { name: 'createdBy', value: createdBy || 'system', type: sql.NVarChar }
         ];
 
         const result = await executeQuery(query, params);

@@ -220,6 +220,11 @@ function renderDepartmentTable() {
                 <span class="text-sm text-gray-900">${dept.Sort_Order || 0}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${dept.IgnoreInImport ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                    ${dept.IgnoreInImport ? '导入忽略' : '正常导入'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${dept.Status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${dept.Status === 'active' ? '启用' : '禁用'}
                 </span>
@@ -310,6 +315,7 @@ function openDepartmentModal(dept = null) {
     document.getElementById('departmentDescription').value = dept.Description || '';
     document.getElementById('departmentSort').value = dept.Sort_Order || 0;
     document.getElementById('departmentStatus').value = dept.Status || 'active';
+    document.getElementById('departmentIgnoreInImport').checked = !!dept.IgnoreInImport;
 
     // 编辑模式下编码不可修改
     document.getElementById('departmentCode').setAttribute('readonly', true);
@@ -317,6 +323,7 @@ function openDepartmentModal(dept = null) {
     // 新增模式
     modalTitle.textContent = '新增科室';
     document.getElementById('departmentCode').removeAttribute('readonly');
+    document.getElementById('departmentIgnoreInImport').checked = false;
   }
 
   modal.classList.remove('hidden');
@@ -351,7 +358,8 @@ async function saveDepartment() {
     type: document.getElementById('departmentType').value,
     description: document.getElementById('departmentDescription').value.trim(),
     sort_order: parseInt(document.getElementById('departmentSort').value) || 0,
-    status: document.getElementById('departmentStatus').value
+    status: document.getElementById('departmentStatus').value,
+    ignore_in_import: document.getElementById('departmentIgnoreInImport').checked
   };
 
   // 表单验证
@@ -371,7 +379,19 @@ async function saveDepartment() {
     let response;
     if (currentEditId) {
       // 更新科室
-      response = await api.put(`/departments/${currentEditId}`, formData);
+      response = await api.put(`/departments/${currentEditId}`, {
+        departmentName: formData.name,
+        departmentType: formData.type,
+        description: formData.description,
+        sortOrder: formData.sort_order,
+        status: formData.status,
+        ignoreInImport: formData.ignore_in_import,
+        // 保留兼容字段，避免不同后端分支字段名差异导致失败
+        name: formData.name,
+        type: formData.type,
+        sort_order: formData.sort_order,
+        ignore_in_import: formData.ignore_in_import
+      });
     } else {
       // 新增科室
       response = await api.post('/departments', formData);

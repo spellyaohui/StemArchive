@@ -497,13 +497,13 @@ class CustomersManager {
                     <form id="customerForm" class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">姓名 *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required-label">姓名</label>
                                 <input type="text" name="name" value="${customer?.Name || customer?.name || ''}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''} required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">性别 *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required-label">性别</label>
                                 <select name="gender" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         ${isView ? 'disabled' : ''} required>
                                     <option value="">请选择</option>
@@ -519,7 +519,7 @@ class CustomersManager {
                                        ${isView ? 'readonly' : ''}>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">身份证号 *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required-label">身份证号</label>
                                 <input type="text" name="id_card" value="${customer?.IdentityCard || customer?.identityCard || customer?.id_card || ''}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        pattern="[0-9]{15}|[0-9]{17}[0-9Xx]"
@@ -528,7 +528,7 @@ class CustomersManager {
                                        ${isView ? 'readonly' : ''} required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">联系电话 *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required-label">联系电话</label>
                                 <input type="tel" name="phone" value="${customer?.Phone || customer?.phone || ''}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        pattern="[0-9]{11}"

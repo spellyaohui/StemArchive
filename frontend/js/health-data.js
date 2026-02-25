@@ -194,7 +194,7 @@ class HealthDataManager {
     const fieldsHTML = template.fields.map(field => {
       let fieldHTML = `
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 ${field.required ? 'required-label' : ''}">${field.label}</label>
             `;
 
       if (field.type === 'select') {

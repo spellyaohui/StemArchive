@@ -266,27 +266,31 @@
     <script src="js/utils.js" defer></script>
     <script src="js/statistics.js" defer></script>
     <script>
-        // 显示科室管理弹出层
+        // 
         function showDepartmentManagementModal() {
             const modal = document.getElementById('departmentManagementModal');
             const iframe = document.getElementById('departmentManagementFrame');
             
-            // 延迟加载 iframe 内容
+            // iframe 
             if (iframe && !iframe.src && iframe.dataset.src) {
                 iframe.src = iframe.dataset.src;
             }
             
             modal.classList.remove('hidden');
-            // 关闭用户菜单
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            // 
             document.getElementById('userMenu').classList.add('hidden');
         }
 
-        // 关闭科室管理弹出层
+        // 
         function closeDepartmentManagementModal() {
             document.getElementById('departmentManagementModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         }
 
-        // 点击弹出层外部关闭
+        // 
         document.getElementById('departmentManagementModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeDepartmentManagementModal();

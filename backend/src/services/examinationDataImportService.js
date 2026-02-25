@@ -91,7 +91,7 @@ class ExaminationDataImportService {
 
             result.message = `导入完成！处理了 ${result.processedExamIds} 个体检记录，` +
                 `成功导入 ${processedCount} 个科室数据，` +
-                `跳过 ${skippedCount} 个未知科室，` +
+                `跳过 ${skippedCount} 个科室，` +
                 `${emptyCount} 个科室无数据，` +
                 `${failedCount} 个科室导入失败`;
 
@@ -152,6 +152,17 @@ class ExaminationDataImportService {
                         continue;
                     }
 
+                    if (department.IgnoreInImport) {
+                        result.skipped.push({
+                            examId,
+                            code,
+                            departmentName: department.DepartmentName,
+                            reason: '科室已设置为导入忽略'
+                        });
+                        console.log(`ℹ️ 科室 ${code} (${department.DepartmentName}) 已设置为导入忽略，跳过`);
+                        continue;
+                    }
+
                     // 获取科室数据
                     const departmentData = await this.fetchDepartmentData(examId, code, department.DepartmentType);
                     
@@ -209,7 +220,7 @@ class ExaminationDataImportService {
     async getSystemDepartments() {
         try {
             const result = await executeQuery(`
-                SELECT DepartmentID, DepartmentCode, DepartmentName, DepartmentType
+                SELECT DepartmentID, DepartmentCode, DepartmentName, DepartmentType, ISNULL(IgnoreInImport, 0) as IgnoreInImport
                 FROM Departments
                 WHERE IsActive = 1
             `, []);
@@ -757,6 +768,7 @@ class ExaminationDataImportService {
                         code,
                         name: dept.DepartmentName,
                         type: dept.DepartmentType,
+                        ignoreInImport: !!dept.IgnoreInImport,
                         exists: true
                     });
                 } else {

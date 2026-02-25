@@ -1024,3 +1024,65 @@ button.loading .loading-spinner,
         color: var(--dark-color);
     }
 }
+
+/* =========================================
+   UI 与 UX 全局优化
+   ========================================= */
+
+/* 1. 自定义全局滚动条 (提升宽表格和长弹窗的视觉体验) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 2. 数据表格增强 (固定表头、斑马线、悬停高亮) */
+/* 针对 DataTable.js 生成的表格进行无侵入式优化 */
+table th {
+    position: sticky !important;
+    top: 0;
+    background-color: #f3f4f6 !important; /* 对应 Tailwind gray-100 */
+    z-index: 10;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+table tbody tr {
+    transition: background-color 0.15s ease;
+}
+table tbody tr:hover {
+    background-color: #eff6ff !important; /* 对应 Tailwind blue-50 */
+}
+table tbody tr:nth-child(even) {
+    background-color: #f8fafc; /* 对应 Tailwind slate-50 */
+}
+
+/* 3. 表单交互反馈 (统一的焦点环，提升无障碍体验) */
+input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important; /* 柔和的蓝色光环 */
+    border-color: #3b82f6 !important;
+}
+
+/* 4. 必填项标识辅助类 */
+.required-label::after {
+    content: " *";
+    color: #ef4444; /* 对应 Tailwind red-500 */
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* 5. 弹窗内容区滚动辅助类 (防止长报告弹窗超出屏幕) */
+.modal-body-scroll {
+    max-height: calc(100vh - 16rem);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}

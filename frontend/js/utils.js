@@ -854,6 +854,64 @@ const NotificationHelper = {
 // 将便利函数添加到全局作用域
 Object.assign(window, NotificationHelper);
 
+// 全局弹出层滚动锁：任意页面只要存在可见模态框，就禁止背景滚动
+(function initGlobalModalScrollLock() {
+    const MODAL_SELECTORS = [
+        '#modalContainer > *',
+        '.fixed.inset-0.z-50:not(.hidden)',
+        '.modal.show',
+        '.popup.modal-in',
+        '.sheet-modal.modal-in',
+        '.dialog.modal-in'
+    ];
+
+    let rafId = null;
+    let observer = null;
+
+    function hasVisibleModal() {
+        return MODAL_SELECTORS.some(selector => document.querySelector(selector));
+    }
+
+    function applyScrollLock() {
+        const shouldLock = hasVisibleModal();
+        document.body.style.overflow = shouldLock ? 'hidden' : '';
+        document.documentElement.style.overflow = shouldLock ? 'hidden' : '';
+    }
+
+    function scheduleApply() {
+        if (rafId !== null) {
+            return;
+        }
+
+        rafId = requestAnimationFrame(() => {
+            rafId = null;
+            applyScrollLock();
+        });
+    }
+
+    function startObserver() {
+        if (!document.body || observer) {
+            return;
+        }
+
+        observer = new MutationObserver(scheduleApply);
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
+        });
+
+        scheduleApply();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+    } else {
+        startObserver();
+    }
+})();
+
 // 显示确认对话框
 function showConfirm(message, onConfirm, onCancel = null) {
     const modal = document.createElement('div');

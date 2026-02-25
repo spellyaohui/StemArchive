@@ -55,9 +55,45 @@ function validateReadOnlyQuery(query) {
     throw new Error('第三方数据库只读查询仅允许 SELECT 语句');
   }
 
-  const forbiddenPattern = /\b(insert|update|delete|merge|alter|drop|truncate|exec|execute|create|grant|revoke|deny)\b/i;
-  if (forbiddenPattern.test(strippedTrailingSemicolon)) {
-    throw new Error('第三方数据库只读查询检测到禁止关键字');
+  const forbiddenDmlPattern = /\b(insert|update|delete|merge|truncate)\b/i;
+  if (forbiddenDmlPattern.test(strippedTrailingSemicolon)) {
+    throw new Error('第三方数据库禁止增删改等写操作（DML）');
+  }
+
+  const forbiddenDdlPattern = /\b(alter|drop|create|grant|revoke|deny)\b/i;
+  if (forbiddenDdlPattern.test(strippedTrailingSemicolon)) {
+    throw new Error('第三方数据库禁止结构或权限变更操作（DDL/DCL）');
+  }
+
+  const forbiddenExecPattern = /\b(exec|execute)\b/i;
+  if (forbiddenExecPattern.test(strippedTrailingSemicolon)) {
+    throw new Error('第三方数据库禁止执行存储过程或动态命令');
+  }
+
+  const forbiddenSelectIntoPattern = /\bselect\b[\s\S]*\binto\b/i;
+  if (forbiddenSelectIntoPattern.test(strippedTrailingSemicolon)) {
+    throw new Error('第三方数据库禁止 SELECT INTO 写入操作');
+  }
+}
+
+async function assertThirdPartyReadOnly(pool) {
+  const result = await pool.request().query(`
+    SELECT
+      DB_NAME() AS CurrentDatabase,
+      CAST(DATABASEPROPERTYEX(DB_NAME(), 'Updateability') AS NVARCHAR(20)) AS Updateability
+  `);
+
+  const row = result.recordset && result.recordset[0] ? result.recordset[0] : {};
+  const currentDatabase = row.CurrentDatabase || 'Unknown';
+  const updateability = row.Updateability || 'Unknown';
+
+  if (currentDatabase === 'JZCIS' && updateability !== 'READ_ONLY') {
+    throw new Error(`第三方数据库 ${currentDatabase} 必须为只读模式，当前为 ${updateability}`);
+  }
+
+  const enforceReadOnly = (process.env.THIRD_DB_ENFORCE_READ_ONLY || 'true').toLowerCase() === 'true';
+  if (enforceReadOnly && updateability !== 'READ_ONLY') {
+    throw new Error(`第三方数据库必须为只读模式，当前数据库 ${currentDatabase} 为 ${updateability}`);
   }
 }
 
@@ -67,6 +103,7 @@ async function connectThirdPartyDB() {
   }
 
   thirdPartyPool = await new sql.ConnectionPool(thirdPartyConfig).connect();
+  await assertThirdPartyReadOnly(thirdPartyPool);
   console.log('✅ 第三方只读数据库连接成功');
   return thirdPartyPool;
 }

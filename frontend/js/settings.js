@@ -377,7 +377,7 @@ class SettingsManager {
                     </div>
                     <form class="p-6">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2 required-label">用户名</label>
                             <input type="text" name="username" value="${user?.username || ''}" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    ${isEdit ? 'readonly' : ''}>
@@ -393,7 +393,7 @@ class SettingsManager {
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">角色</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2 required-label">角色</label>
                             <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="user" ${user?.role === 'user' ? 'selected' : ''}>普通用户</option>
                                 <option value="doctor" ${user?.role === 'doctor' ? 'selected' : ''}>医生</option>
@@ -402,7 +402,7 @@ class SettingsManager {
                         </div>
                         ${!isEdit ? `
                             <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required-label">密码</label>
                                 <input type="password" name="password" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>

@@ -203,6 +203,7 @@ app.use('/api/treatment-types', require('./src/routes/treatmentTypes'));
 app.use('/api/treatment-effectiveness', require('./src/routes/treatment-effectiveness'));
 app.use('/api/treatment-history', require('./src/routes/treatment-history'));
 app.use('/api/examination-import', require('./src/routes/examinationImport'));
+app.use('/api/auto-import', require('./src/routes/autoImport'));
 app.use('/api', require('./src/routes/thirdPartyExamination'));
 
 // 测试输注排期查询
@@ -481,6 +482,10 @@ async function startServer() {
             console.log(`📡 API 接口: http://127.0.0.1:${PORT}/api/`);
             console.log(`⚙️ 系统设置已初始化并支持持久化存储`);
             console.log('========================================');
+
+            // 启动自动导入服务
+            const autoImportService = require('./src/services/autoImportService');
+            autoImportService.start();
         });
 
         return server;

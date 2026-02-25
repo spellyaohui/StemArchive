@@ -28,6 +28,7 @@ router.get('/', async (req, res) => {
                 Status,
                 SortOrder as Sort_Order,
                 IsActive,
+                ISNULL(IgnoreInImport, 0) as IgnoreInImport,
                 CreatedAt,
                 UpdatedAt,
                 CreatedBy,
@@ -112,6 +113,7 @@ router.get('/:id', async (req, res) => {
                 Status,
                 SortOrder,
                 IsActive,
+                ISNULL(IgnoreInImport, 0) as IgnoreInImport,
                 CreatedAt,
                 UpdatedAt,
                 CreatedBy,
@@ -129,6 +131,7 @@ router.get('/:id', async (req, res) => {
         }
 
         res.json({
+            success: true,
             status: 'Success',
             message: '获取科室详情成功',
             data: result[0]
@@ -157,11 +160,14 @@ router.post('/', async (req, res) => {
             notes,
             sort_order,
             status,
+            ignore_in_import,
             createdBy
         } = req.body;
 
+        const normalizedIgnoreInImport = [true, 1, '1', 'true'].includes(ignore_in_import);
+
         console.log('收到科室创建请求:', {
-            code, name, type, description, notes, sort_order, status, createdBy
+            code, name, type, description, notes, sort_order, status, ignore_in_import: normalizedIgnoreInImport, createdBy
         });
 
         // 验证必填字段
@@ -217,12 +223,12 @@ router.post('/', async (req, res) => {
             INSERT INTO Departments (
                 DepartmentCode, DepartmentName, DepartmentType,
                 Description, Notes, Status, SortOrder,
-                IsActive, CreatedBy
+                IsActive, IgnoreInImport, CreatedBy
             )
             VALUES (
                 @code, @name, @type,
                 @description, @notes, @status, @sort_order,
-                @isActive, @createdBy
+                @isActive, @ignoreInImport, @createdBy
             );
 
             SELECT SCOPE_IDENTITY() as NewDepartmentID;
@@ -235,6 +241,7 @@ router.post('/', async (req, res) => {
             { name: 'sort_order', type: sql.Int, value: sort_order || 0 },
             { name: 'status', type: sql.NVarChar(20), value: status || 'active' },
             { name: 'isActive', type: sql.Bit, value: 1 },
+            { name: 'ignoreInImport', type: sql.Bit, value: normalizedIgnoreInImport ? 1 : 0 },
             { name: 'createdBy', type: sql.NVarChar(100), value: createdBy || null }
         ]);
 
@@ -254,6 +261,7 @@ router.post('/', async (req, res) => {
                 Status,
                 SortOrder as Sort_Order,
                 IsActive,
+                ISNULL(IgnoreInImport, 0) as IgnoreInImport,
                 CreatedAt,
                 UpdatedAt,
                 CreatedBy,
@@ -304,8 +312,14 @@ router.put('/:id', async (req, res) => {
             notes,
             sortOrder,
             status,
+            ignoreInImport,
+            ignore_in_import,
             updatedBy
         } = req.body;
+
+        const normalizedIgnoreInImport = ignoreInImport !== undefined || ignore_in_import !== undefined
+            ? [true, 1, '1', 'true'].includes(ignoreInImport !== undefined ? ignoreInImport : ignore_in_import)
+            : undefined;
 
         // 验证ID是否为有效数字
         if (!/^\d+$/.test(id)) {
@@ -393,6 +407,10 @@ router.put('/:id', async (req, res) => {
             updateFields.push('Status = @status');
             updateParams.push({ name: 'status', type: sql.NVarChar(20), value: status });
         }
+        if (normalizedIgnoreInImport !== undefined) {
+            updateFields.push('IgnoreInImport = @ignoreInImport');
+            updateParams.push({ name: 'ignoreInImport', type: sql.Bit, value: normalizedIgnoreInImport ? 1 : 0 });
+        }
         if (updatedBy !== undefined) {
             updateFields.push('UpdatedBy = @updatedBy');
             updateParams.push({ name: 'updatedBy', type: sql.NVarChar(100), value: updatedBy });
@@ -424,6 +442,7 @@ router.put('/:id', async (req, res) => {
                 Status,
                 SortOrder,
                 IsActive,
+                ISNULL(IgnoreInImport, 0) as IgnoreInImport,
                 CreatedAt,
                 UpdatedAt,
                 CreatedBy,
@@ -434,6 +453,7 @@ router.put('/:id', async (req, res) => {
         `, [{ name: 'id', type: sql.Int, value: parseInt(id) }]);
 
         res.json({
+            success: true,
             status: 'Success',
             message: '科室更新成功',
             data: updatedDepartment[0]

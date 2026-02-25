@@ -420,6 +420,8 @@
             }
             
             modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
             // 关闭用户菜单
             document.getElementById('userMenu').classList.add('hidden');
         }
@@ -427,6 +429,8 @@
         // 关闭科室管理弹出层
         function closeDepartmentManagementModal() {
             document.getElementById('departmentManagementModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
         }
 
         // 点击弹出层外部关闭

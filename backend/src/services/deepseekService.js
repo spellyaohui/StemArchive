@@ -413,43 +413,93 @@ class DeepSeekService {
      * @returns {string} Markdown格式报告
      */
     generateComparisonMarkdownReport(comparisonData, aiAnalysis) {
-        const { customerName, exams } = comparisonData;
+        const safeData = comparisonData || {};
+        const customerName = safeData.customerName || '未知客户';
+        const exams = Array.isArray(safeData.exams) ? safeData.exams : [];
 
-        let markdown = `# ${customerName} - 健康对比分析报告\\n\\n`;
+        const formatBeijingDateTime = (value) => {
+            const parsed = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(parsed.getTime())) {
+                return '';
+            }
 
-        markdown += `## 基本信息\\n\\n`;
-        markdown += `- **姓名**: ${customerName}\\n`;
-        markdown += `- **对比体检次数**: ${exams.length}\\n`;
+            const dateParts = new Intl.DateTimeFormat('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).formatToParts(parsed).reduce((acc, part) => {
+                if (part.type !== 'literal') {
+                    acc[part.type] = part.value;
+                }
+                return acc;
+            }, {});
 
-        // 添加体检ID列表
-        markdown += `- **对比体检ID**: `;
-        markdown += exams.map((exam, index) => `第${index + 1}次: ${exam.medicalExamId}`).join(', ');
-        markdown += `\\n`;
+            return `${dateParts.year}-${dateParts.month}-${dateParts.day} ${dateParts.hour}:${dateParts.minute}（北京时间）`;
+        };
 
-        // 添加体检日期列表
-        markdown += `- **体检日期**: `;
-        markdown += exams.map((exam, index) => `第${index + 1}次: ${exam.examDate}`).join(', ');
-        markdown += `\\n`;
+        const formatDate = (value) => {
+            if (!value) {
+                return '未知日期';
+            }
 
-        markdown += `- **报告生成时间**: ${new Date().toLocaleString('zh-CN')}\\n\\n`;
+            const parsed = new Date(value);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+            }
 
-        markdown += `---\\n\\n`;
+            return String(value);
+        };
 
-        markdown += `## AI健康对比分析\\n\\n`;
-        markdown += aiAnalysis;
+        const normalizedAiAnalysis = String(aiAnalysis || '')
+            .replace(/```markdown/gi, '')
+            .replace(/```/g, '')
+            .replace(/^\s*#{1,6}\s*AI健康对比分析\s*$/gim, '')
+            .replace(/^\s*#{1,6}\s*健康对比分析报告\s*$/gim, '')
+            .replace(/^\s*#{1,6}\s*健康对比分析报告尾部[:：]?\s*$/gim, '')
+            .replace(/^\s*\*?\s*Powered by DeepSeek AI\s*\*?\s*$/gim, '')
+            .replace(/^\s*\*?\s*报告生成时间[:：].*\*?\s*$/gim, '')
+            .trim();
 
-        markdown += `\\n\\n---\\n\\n`;
-        markdown += `## 重要提示\\n\\n`;
-        markdown += `1. 本健康对比分析报告基于AI算法生成，仅供参考，不能替代专业医生的诊断。\\n`;
-        markdown += `2. 如有健康问题，请及时咨询专业医疗机构。\\n`;
-        markdown += `3. 请根据医生建议进行定期复查和健康管理。\\n`;
-        markdown += `4. 对比分析基于历史体检数据，个体差异可能影响分析结果。\\n\\n`;
+        const examIds = exams.length
+            ? exams.map((exam, index) => `第${index + 1}次: ${exam.medicalExamId || '未知ID'}`).join('，')
+            : '暂无体检记录';
 
-        markdown += `---\\n\\n`;
-        markdown += `*报告生成时间: ${new Date().toLocaleString('zh-CN')}*\\n`;
-        markdown += `*Powered by DeepSeek AI*\\n`;
+        const examDates = exams.length
+            ? exams.map((exam, index) => `第${index + 1}次: ${formatDate(exam.examDate)}`).join('，')
+            : '暂无体检记录';
+        const generatedAt = formatBeijingDateTime(new Date()) || new Date().toLocaleString('zh-CN');
 
-        return markdown;
+        const markdownSections = [
+            `# ${customerName} - 健康对比分析报告`,
+            '',
+            '## 基本信息',
+            '',
+            `- **姓名**: ${customerName}`,
+            `- **对比体检次数**: ${exams.length}`,
+            `- **对比体检ID**: ${examIds}`,
+            `- **体检日期**: ${examDates}`,
+            `- **报告生成时间**: ${generatedAt}`,
+            '',
+            '---',
+            '',
+            '## 临床趋势重点评估',
+            '',
+            normalizedAiAnalysis || '未获取到可用的对比分析内容。',
+            '',
+            '---',
+            '',
+            '## 重要提示',
+            '',
+            '1. 本健康对比分析报告基于体检历史数据及AI辅助分析生成，仅供健康管理参考，不能替代临床诊断。',
+            '2. 如存在持续异常指标或不适症状，请及时咨询专业医疗机构。',
+            '3. 建议结合医生意见制定复查计划并持续跟踪关键指标变化。'
+        ];
+
+        return markdownSections.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     }
 
     /**

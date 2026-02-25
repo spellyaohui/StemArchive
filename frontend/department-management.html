@@ -147,6 +147,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">科室类型</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">排序</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">导入策略</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -225,6 +226,13 @@
                             <option value="active">启用</option>
                             <option value="inactive">禁用</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="inline-flex items-center">
+                            <input id="departmentIgnoreInImport" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">获取体检数据时忽略该科室</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">勾选后，自动导入体检数据时会跳过此科室</p>
                     </div>
                     <div class="flex justify-end space-x-4 pt-4">
                         <button type="button" onclick="closeDepartmentModal()"

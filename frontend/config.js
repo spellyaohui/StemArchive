@@ -3,7 +3,7 @@
  * 用于动态配置API地址和其他前端设置
  * 
  * 支持两种部署模式：
- * 1. 开发模式：前端独立运行在 8080 端口，后端在 5000 端口
+ * 1. 开发模式：前端独立运行在本地非5000端口（如 5173），后端在 5000 端口
  * 2. 生产模式：前后端合并，使用同一端口（相对路径）
  */
 
@@ -32,14 +32,16 @@ function getBasePath() {
 // 检测是否为开发环境
 function isDevelopment() {
     // 开发环境特征：
-    // 1. 端口为 8080（前端独立开发服务器）
-    // 2. 端口为空但 hostname 为 localhost/127.0.0.1 且有特定标识
-    return currentPort === '8080';
+    // 1. 在本地 localhost/127.0.0.1 访问
+    // 2. 端口不是后端统一服务端口 5000
+    // 兼容 5173、8080 等前端独立开发端口
+    const isLocalHost = currentHost === 'localhost' || currentHost === '127.0.0.1';
+    return isLocalHost && currentPort !== '' && currentPort !== '5000';
 }
 
 // 根据当前环境确定API基础URL
 function getAPIBaseURL() {
-    // 开发环境：前端在 8080 端口，API 在 5000 端口
+    // 开发环境：前端在本地非5000端口，API 在 5000 端口
     if (isDevelopment()) {
         return `${currentProtocol}//${currentHost}:5000/api`;
     }
@@ -104,7 +106,7 @@ if (isDevelopment()) {
 // ========================================
 //
 // 1. 主API配置：会根据当前环境自动调整
-//    - 开发环境(8080端口)：http://localhost:5000/api
+//    - 开发环境(本地非5000端口，如5173/8080)：http://localhost:5000/api
 //    - 生产环境：/api（相对路径，自动适应任何域名和端口）
 //
 // 2. 使用方法：
@@ -112,7 +114,7 @@ if (isDevelopment()) {
 //    - 或使用全局变量：window.API_CONFIG.baseURL
 //
 // 3. 部署说明：
-//    - 开发时：前端运行 npx http-server -p 8080，后端运行 npm run dev
+//    - 开发时：前端运行 npx http-server -a 127.0.0.1 -p 5173，后端运行 npm run dev
 //    - 生产时：运行 npm run build 构建前端，然后 npm start 启动统一服务器
 //
 // ========================================

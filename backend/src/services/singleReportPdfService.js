@@ -43,10 +43,10 @@ class SingleReportPdfService {
             const pdfBuffer = await page.pdf({
                 format: 'A4',
                 printBackground: true,
-                margin: { top: '10mm', bottom: '14mm', left: '12mm', right: '12mm' },
+                margin: { top: '25mm', bottom: '25mm', left: '20mm', right: '20mm' },
                 displayHeaderFooter: true,
-                headerTemplate: '<div style="width:100%;font-size:7px;color:#64748b;padding:0 12mm;display:flex;justify-content:space-between;align-items:center;font-family:Microsoft YaHei,sans-serif;"><span>干细胞治疗档案管理系统</span><span>健康体检单次报告</span></div>',
-                footerTemplate: '<div style="width:100%;font-size:7px;color:#64748b;padding:0 12mm;display:flex;justify-content:space-between;align-items:center;font-family:Microsoft YaHei,sans-serif;"><span>本报告由系统自动生成，仅供参考</span><span>第 <span class="pageNumber"></span> 页 / 共 <span class="totalPages"></span> 页</span></div>'
+                headerTemplate: '<div style="width:100%;font-size:7px;color:#64748b;padding:0 20mm;display:flex;justify-content:space-between;align-items:center;font-family:Microsoft YaHei,sans-serif;"><span>干细胞治疗档案管理系统</span><span>健康体检单次报告</span></div>',
+                footerTemplate: '<div style="width:100%;font-size:7px;color:#64748b;padding:0 20mm;display:flex;justify-content:space-between;align-items:center;font-family:Microsoft YaHei,sans-serif;"><span>本报告由系统自动生成，仅供参考</span><span>第 <span class="pageNumber"></span> 页 / 共 <span class="totalPages"></span> 页</span></div>'
             });
 
             await page.close();

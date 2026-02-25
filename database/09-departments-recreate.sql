@@ -57,6 +57,7 @@ CREATE TABLE Departments (
     -- 状态和排序
     Status NVARCHAR(20) NOT NULL DEFAULT 'active',
     SortOrder INT NOT NULL DEFAULT 0,
+    IgnoreInImport BIT NOT NULL DEFAULT 0,
 
     -- 审计字段
     IsActive BIT NOT NULL DEFAULT 1,
