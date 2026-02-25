@@ -16,9 +16,9 @@
 ### AI智能功能 ⭐
 - **AI健康评估**: 集成DeepSeek AI，基于体检数据生成专业健康评估报告
 - **AI对比分析**: 支持多选体检ID进行智能对比分析，生成专业对比报告
-- **智能报告生成**: 支持Markdown格式的健康评估和对比报告生成
-- **PDF转换功能**: 一键将健康评估和对比报告转换为PDF格式并下载
-- **多格式输出**: 支持Markdown和PDF两种报告格式
+- **智能报告生成**: 自动生成结构化报告并用于高质量PDF渲染
+- **PDF版本下载**: 一键下载健康评估、对比分析、治疗总结的PDF版本报告
+- **多格式输出**: 治疗总结支持原始文档下载，所有报告支持PDF版本下载
 
 ### 特色功能
 - **动态科室配置**: 支持科室灵活配置和数据结构自定义
@@ -105,14 +105,14 @@ npm run dev
 
 # 终端2：启动前端开发服务器
 cd frontend
-npx http-server -p 8080
+npm run dev
 ```
 - 后端 API: http://localhost:5000/api
-- 前端页面: http://localhost:8080
+- 前端页面: http://127.0.0.1:5173
 
 #### 6. 访问系统
 - 统一部署模式: http://localhost:5000
-- 开发模式: http://localhost:8080
+- 开发模式: http://127.0.0.1:5173
 
 ## 项目结构
 
@@ -147,6 +147,15 @@ StemArchive/
 ```
 
 ## 数据库设计
+
+### 第三方数据库操作限制（强制）
+
+- 第三方数据库 **JZCIS** 仅允许只读访问。
+- 对 JZCIS 明令禁止任何写操作：`INSERT`、`UPDATE`、`DELETE`、`MERGE`、`TRUNCATE`。
+- 对 JZCIS 明令禁止结构与权限变更：`CREATE`、`ALTER`、`DROP`、`GRANT`、`REVOKE`、`DENY`。
+- 禁止执行命令/存储过程：`EXEC` / `EXECUTE`。
+- 数据库升级脚本（`database/*.sql`）不得在 JZCIS 上执行，只能在业务可写库执行。
+- 后端第三方数据库访问层已实施只读校验（见 `backend/config/thirdPartyDatabase.js`）。
 
 ### 核心表结构
 - `Customers` - 客户基本信息（以身份证号为主键）
@@ -184,15 +193,13 @@ StemArchive/
 - `GET /api/reports/health-assessment/check?medicalExamId=xxx` - 检查健康评估是否已生成
 - `POST /api/reports/health-assessment/generate` - 生成AI健康评估报告
 - `GET /api/reports/health-assessment/:id` - 获取健康评估报告详情
-- `GET /api/reports/health-assessment/:id/download` - 下载Markdown格式报告
-- `POST /api/reports/health-assessment/:id/convert-pdf` - 转换为PDF格式
+- `POST /api/reports/health-assessment/:id/convert-pdf` - 下载PDF版本报告
 - `GET /api/reports/health-assessment/customer/:customerId` - 获取客户的健康评估列表
 
 #### 对比分析报告 🆕
 - `POST /api/reports/comparison/generate` - 生成AI对比分析报告
 - `GET /api/reports/comparison/:id` - 获取对比报告详情
-- `GET /api/reports/comparison/:id/download` - 下载Markdown格式对比报告
-- `POST /api/reports/comparison/:id/convert-pdf` - 转换为PDF格式
+- `POST /api/reports/comparison/:id/convert-pdf` - 下载PDF版本报告
 - `GET /api/reports/comparison/customer/:customerId` - 获取客户的对比报告列表
 - `DELETE /api/reports/comparison/:id` - 删除对比报告
 
@@ -214,7 +221,7 @@ npm run dev      # 启动开发服务器（带热重载）
 # 终端1
 cd backend && npm run dev
 # 终端2
-cd frontend && npx http-server -p 8080
+cd frontend && npm run dev
 ```
 
 ### 生产环境
@@ -252,7 +259,7 @@ npm start        # 或使用 PM2: pm2 start server.js
 3. **选择体检报告**: 从检客的体检记录中选择具体的体检ID
 4. **生成AI评估**: 点击生成健康评估，系统将调用DeepSeek AI生成专业报告
 5. **查看报告**: 在弹窗中查看AI生成的健康评估报告
-6. **下载报告**: 支持下载Markdown格式和PDF格式的报告
+6. **下载报告**: 下载PDF版本报告
 
 #### 对比分析报告 🆕
 1. **选择检客**: 在报告查看页面选择已有检客
@@ -261,7 +268,7 @@ npm start        # 或使用 PM2: pm2 start server.js
 4. **多选体检报告**: 从搜索结果中选择2-3个体检ID进行对比分析（支持配置）
 5. **生成AI对比**: 点击生成对比报告，系统将调用DeepSeek AI进行智能对比分析
 6. **查看报告**: 在弹窗中查看AI生成的对比分析报告
-7. **下载报告**: 支持下载Markdown格式和PDF格式的对比报告
+7. **下载报告**: 下载PDF版本报告
 8. **历史管理**: 在历史报告中可以查看、下载或删除之前的对比报告
 
 ### 注意事项
@@ -270,7 +277,7 @@ npm start        # 或使用 PM2: pm2 start server.js
 - 支持批量导入检客数据
 - 所有操作都有详细的日志记录
 - AI健康评估和对比分析需要配置DeepSeek API Key
-- PDF转换需要运行独立的PDF转换服务
+- PDF由系统内置渲染引擎自动生成，无需额外部署第三方PDF转换服务
 - 对比报告支持多选体检ID，最多可选择数量可通过环境变量配置（默认3个）
 - 对比报告会自动进行重复检查，避免短时间内生成相同组合的重复报告
 
@@ -309,11 +316,7 @@ A: 编辑 `backend/.env` 文件中的数据库配置信息。
 A: 在 `backend/.env` 文件中设置 `DEEPSEEK_API_KEY`，获取API Key请访问 [DeepSeek平台](https://platform.deepseek.com/api_keys)。
 
 ### Q: 如何配置PDF转换服务？
-A: 支持两种配置方式：
-- **方式1**: 在 `backend/.env` 中设置 `PDF_CONVERT_URL=http://localhost:4000/convert`
-- **方式2**: 分别设置 `PDF_HOST=localhost` 和 `PDF_PORT=4000`
-
-详细配置请参考 `backend/PDF_SERVICE_CONFIG.md` 文档。
+A: 当前版本无需配置第三方PDF转换服务。系统使用内置 Puppeteer 渲染引擎，后端会自动完成 Markdown 到 PDF 的转换。
 
 ### Q: AI健康评估需要什么数据？
 A: 需要完整的体检数据，包括各个科室的评估结果和医生总结。
@@ -328,7 +331,7 @@ A: 使用SQL Server Management Studio进行数据库备份。
 A: 当前版本为单用户版本，多用户支持正在开发中。
 
 ### Q: AI评估报告生成失败怎么办？
-A: 检查DeepSeek API配置和网络连接，确保PDF转换服务正常运行。
+A: 检查DeepSeek API配置和网络连接，并确认后端服务运行正常。
 
 ### Q: 对比报告最多可以选择几个体检ID？
 A: 默认最多选择3个，可通过环境变量 `COMPARISON_REPORT_MAX_SELECTIONS` 进行配置。
@@ -341,11 +344,11 @@ A: 只有在"对比报告"选项卡下才会显示历史报告，其他选项卡
 
 ### Q: 系统中的AIAnalysis和MarkdownContent字段有什么区别？
 A:
-- **AIAnalysis**: 存储AI的原始分析结果，用于"下载原始文档"和"转换PDF"功能
-- **MarkdownContent**: 存储格式化的完整报告，包含标题、元数据、免责声明等，用于报告展示和传统下载
+- **AIAnalysis**: 存储AI的原始分析结果，用于追踪原始生成内容
+- **MarkdownContent**: 存储格式化的完整报告，包含标题、元数据、免责声明等，用于报告展示和PDF渲染
 
 ### Q: 为什么下载的PDF内容与网页显示的不一样？
-A: 网页显示使用格式化的 `MarkdownContent` 字段，PDF转换使用纯AI分析的 `AIAnalysis` 字段，这是为了提供不同的使用场景。
+A: 当前版本PDF与网页展示都优先使用格式化的 `MarkdownContent` 字段，确保版式与专业提示一致。
 
 ## 更新日志
 
@@ -356,12 +359,17 @@ A: 网页显示使用格式化的 `MarkdownContent` 字段，PDF转换使用纯A
 - **响应式优化**: 页脚固定功能在各种屏幕尺寸下都能正常工作
 
 ### v1.2.1 (2025-10-07) - 功能优化版本 🔧
-- **PDF转换服务配置优化**: 支持两种配置方式（完整URL或分离IP端口），提升部署灵活性
+- **PDF功能优化（历史版本）**: 后续版本已统一切换为系统内置渲染，无需外部PDF转换接口配置
 - **字段使用策略优化**: 明确区分AIAnalysis和MarkdownContent字段的使用场景
   - 网页展示和传统下载使用MarkdownContent（格式化报告）
-  - 下载原始文档和PDF转换使用AIAnalysis（纯AI分析）
-- **环境配置增强**: 添加详细的PDF服务配置指南和示例
-- **向后兼容**: 保持现有配置的完全兼容性
+  - 原始分析内容保留在AIAnalysis，便于追踪生成来源
+- **版本演进说明**: 该版本中的外部PDF配置策略已在后续版本废弃
+
+### v1.2.3 (2026-02-25) - PDF内置渲染统一版本 🏥
+- **PDF内置化**: 健康评估、对比分析、治疗总结统一使用系统内置渲染引擎生成PDF
+- **配置简化**: 移除外部PDF转换API相关环境变量配置
+- **版式统一**: PDF生成优先使用 `MarkdownContent`，确保医疗提示与结构一致
+- **对比报告升级**: 对比分析报告对齐专科中心风格，重点异常与风险分级在PDF中高可读展示
 
 ### v1.2.0 (2025-10-07) - AI智能对比分析版本 🆕
 - **新增AI对比分析功能**: 支持多选体检ID进行智能对比分析，生成专业对比报告
@@ -378,7 +386,7 @@ A: 网页显示使用格式化的 `MarkdownContent` 字段，PDF转换使用纯A
 - **增强的用户体验**: 采用弹窗模式替代页面跳转，提供更流畅的操作体验
 - **动态按钮状态**: 根据评估状态智能显示"生成"或"查看"按钮
 - **完整的API集成**: 支持异步处理和状态轮询机制
-- **多种报告格式**: 支持Markdown和PDF两种报告下载格式
+- **多种报告格式**: 提供PDF版本报告下载
 - **智能通知系统**: 完善的操作状态反馈和错误处理机制
 
 ### v1.0.0 (2025-10-03)

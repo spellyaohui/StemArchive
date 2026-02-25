@@ -198,7 +198,7 @@ router.post('/generate',
             { name: 'reportContent', value: reportContent, type: sql.NVarChar },
             { name: 'summary', value: summary, type: sql.NVarChar },
             { name: 'aiAnalysis', value: aiAnalysis, type: sql.NVarChar },
-            { name: 'createdBy', value: req.user?.id || 'system', type: sql.NVarChar }
+            { name: 'createdBy', value: req.user?.id ? String(req.user.id) : 'system', type: sql.NVarChar }
         ];
 
         const result = await executeQuery(query, params);
@@ -621,7 +621,88 @@ router.delete('/:id', async (req, res) => {
 // 健康评估相关API接口
 const HealthAssessmentReport = require('../models/HealthAssessmentReport');
 const deepseekService = require('../services/deepseekService');
-const pdfService = require('../services/pdfService');
+const reportPdfService = require('../services/healthAssessmentPdfService');
+
+function normalizeMarkdownForPdf(markdown) {
+    if (typeof markdown !== 'string') {
+        return '';
+    }
+
+    let normalized = markdown.trim();
+    if (!normalized) {
+        return '';
+    }
+
+    // 兼容历史数据：部分内容以 JSON 字符串形式存储
+    if (normalized.startsWith('"') && normalized.endsWith('"')) {
+        try {
+            const parsed = JSON.parse(normalized);
+            if (typeof parsed === 'string') {
+                normalized = parsed;
+            }
+        } catch (error) {
+            // ignore parse error and keep original string
+        }
+    }
+
+    return normalized
+        .replace(/\\r\\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\n')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+}
+
+function sanitizeComparisonMarkdown(markdown) {
+    if (!markdown) {
+        return '';
+    }
+
+    return markdown
+        .replace(/^\s*#{1,6}\s*AI健康对比分析\s*$/gim, '')
+        .replace(/^\s*#{1,6}\s*健康对比分析报告\s*$/gim, '')
+        .replace(/^\s*#{1,6}\s*健康对比分析报告尾部[:：]?\s*$/gim, '')
+        .replace(/^\s*\*?\s*报告生成时间[:：].*\*?\s*$/gim, '')
+        .replace(/^\s*\*?\s*Powered by DeepSeek AI\s*\*?\s*$/gim, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function compactVerboseDateText(markdown) {
+    if (!markdown) {
+        return '';
+    }
+
+    const verboseDatePattern = /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Za-z]{3}\s+\d{2}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+GMT[+-]\d{4}(?:\s*\([^)]*\))?/g;
+
+    return markdown.replace(verboseDatePattern, (rawDateText) => {
+        const parsedDate = new Date(rawDateText);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return rawDateText;
+        }
+
+        return parsedDate.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+    });
+}
+
+function parseComparisonData(rawComparisonData, fallbackCustomerName) {
+    let parsed = null;
+
+    if (rawComparisonData && typeof rawComparisonData === 'object') {
+        parsed = rawComparisonData;
+    } else if (typeof rawComparisonData === 'string' && rawComparisonData.trim()) {
+        try {
+            parsed = JSON.parse(rawComparisonData);
+        } catch (error) {
+            parsed = null;
+        }
+    }
+
+    return {
+        customerName: parsed?.customerName || fallbackCustomerName || '未知客户',
+        exams: Array.isArray(parsed?.exams) ? parsed.exams : []
+    };
+}
 
 // 检查是否已生成健康评估
 router.get('/health-assessment/check', async (req, res) => {
@@ -839,7 +920,7 @@ router.post('/health-assessment/generate',
                 assessmentDate: healthData.examDate,
                 originalData: JSON.stringify(healthData),
                 generationStatus: 'processing',
-                createdBy: req.user?.id || 'system'
+                createdBy: req.user?.id ? String(req.user.id) : 'system'
             };
 
             const report = await HealthAssessmentReport.create(reportData);
@@ -903,9 +984,17 @@ router.post('/health-assessment/generate',
 
         } catch (error) {
             console.error('生成健康评估失败:', error);
+            console.error('错误堆栈:', error.stack);
+            console.error('错误详情:', JSON.stringify({
+                message: error.message,
+                name: error.name,
+                number: error.number,
+                state: error.state,
+                class: error.class
+            }));
             res.status(500).json({
                 status: 'Error',
-                message: '生成健康评估失败'
+                message: '生成健康评估失败: ' + error.message
             });
         }
     });
@@ -961,48 +1050,6 @@ router.get('/health-assessment/customer/:customerId', async (req, res) => {
     }
 });
 
-// 下载健康评估报告
-router.get('/health-assessment/:id/download', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const report = await HealthAssessmentReport.getById(id);
-
-        if (!report) {
-            return res.status(404).json({
-                status: 'Error',
-                message: '健康评估报告不存在'
-            });
-        }
-
-        if (report.GenerationStatus !== 'completed') {
-            return res.status(400).json({
-                status: 'Error',
-                message: '健康评估报告尚未生成完成'
-            });
-        }
-
-        if (!report.MarkdownContent) {
-            return res.status(400).json({
-                status: 'Error',
-                message: '健康评估报告内容为空'
-            });
-        }
-
-        // 设置下载响应头
-        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="${report.ReportName}.md"`);
-
-        res.send(report.MarkdownContent);
-    } catch (error) {
-        console.error('下载健康评估报告失败:', error);
-        res.status(500).json({
-            status: 'Error',
-            message: '下载健康评估报告失败'
-        });
-    }
-});
-
 // 删除健康评估报告
 router.delete('/health-assessment/:id', async (req, res) => {
     try {
@@ -1051,24 +1098,18 @@ router.post('/health-assessment/:id/convert-pdf', async (req, res) => {
             });
         }
 
-        if (!report.AIAnalysis) {
+        const markdownForPdf = normalizeMarkdownForPdf(report.MarkdownContent) || normalizeMarkdownForPdf(report.AIAnalysis);
+        if (!markdownForPdf) {
             return res.status(400).json({
                 status: 'Error',
                 message: '健康评估报告内容为空'
             });
         }
 
-        // 检查PDF转换服务是否可用
-        const serviceAvailable = await pdfService.isServiceAvailable();
-        if (!serviceAvailable) {
-            return res.status(503).json({
-                status: 'Error',
-                message: 'PDF转换服务不可用，请稍后重试'
-            });
-        }
-
-        // 调用PDF转换服务
-        const pdfResult = await pdfService.convertMarkdownToPDF(report.AIAnalysis);
+        // 调用系统内置PDF渲染服务
+        const pdfResult = await reportPdfService.convertMarkdownToPDF(markdownForPdf, {
+            title: report.ReportName || '健康评估报告'
+        });
 
         if (pdfResult.success) {
             res.json({
@@ -1417,48 +1458,6 @@ router.get('/comparison/customer/:customerId', async (req, res) => {
     }
 });
 
-// 下载对比报告
-router.get('/comparison/:id/download', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const report = await ComparisonReport.getById(id);
-
-        if (!report) {
-            return res.status(404).json({
-                status: 'Error',
-                message: '对比报告不存在'
-            });
-        }
-
-        if (report.Status !== 'completed') {
-            return res.status(400).json({
-                status: 'Error',
-                message: '对比报告尚未生成完成'
-            });
-        }
-
-        if (!report.MarkdownContent) {
-            return res.status(400).json({
-                status: 'Error',
-                message: '对比报告内容为空'
-            });
-        }
-
-        // 设置下载响应头
-        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="${report.CustomerName}-健康对比分析报告.md"`);
-
-        res.send(report.MarkdownContent);
-    } catch (error) {
-        console.error('下载对比报告失败:', error);
-        res.status(500).json({
-            status: 'Error',
-            message: '下载对比报告失败'
-        });
-    }
-});
-
 // 转换对比报告为PDF
 router.post('/comparison/:id/convert-pdf', async (req, res) => {
     try {
@@ -1480,24 +1479,26 @@ router.post('/comparison/:id/convert-pdf', async (req, res) => {
             });
         }
 
-        if (!report.AIAnalysis) {
+        const normalizedMarkdownContent = normalizeMarkdownForPdf(report.MarkdownContent);
+        const normalizedAiAnalysis = sanitizeComparisonMarkdown(normalizeMarkdownForPdf(report.AIAnalysis));
+
+        let markdownForPdf = compactVerboseDateText(sanitizeComparisonMarkdown(normalizedMarkdownContent));
+        if (!markdownForPdf && normalizedAiAnalysis) {
+            const comparisonData = parseComparisonData(report.ComparisonData, report.CustomerName);
+            markdownForPdf = deepseekService.generateComparisonMarkdownReport(comparisonData, normalizedAiAnalysis);
+        }
+
+        if (!markdownForPdf) {
             return res.status(400).json({
                 status: 'Error',
                 message: '对比报告内容为空'
             });
         }
 
-        // 检查PDF转换服务是否可用
-        const serviceAvailable = await pdfService.isServiceAvailable();
-        if (!serviceAvailable) {
-            return res.status(503).json({
-                status: 'Error',
-                message: 'PDF转换服务不可用，请稍后重试'
-            });
-        }
-
-        // 调用PDF转换服务
-        const pdfResult = await pdfService.convertMarkdownToPDF(report.AIAnalysis);
+        // 调用系统内置PDF渲染服务
+        const pdfResult = await reportPdfService.convertMarkdownToPDF(markdownForPdf, {
+            title: `${report.CustomerName}-健康对比分析报告`
+        });
 
         if (pdfResult.success) {
             res.json({
@@ -1948,24 +1949,25 @@ router.post('/treatment-summary/:id/convert-pdf', async (req, res) => {
 
         const report = result[0];
 
-        if (report.Status !== 'completed' || !report.AIAnalysis) {
+        if (report.Status !== 'completed') {
             return res.status(400).json({
                 status: 'Error',
-                message: '报告尚未生成完成或内容为空'
+                message: '报告尚未生成完成'
             });
         }
 
-        // 检查PDF转换服务是否可用
-        const serviceAvailable = await pdfService.isServiceAvailable();
-        if (!serviceAvailable) {
-            return res.status(503).json({
+        const markdownForPdf = normalizeMarkdownForPdf(report.MarkdownContent) || normalizeMarkdownForPdf(report.AIAnalysis);
+        if (!markdownForPdf) {
+            return res.status(400).json({
                 status: 'Error',
-                message: 'PDF转换服务不可用，请稍后重试'
+                message: '报告内容为空'
             });
         }
 
-        // 调用PDF服务转换
-        const pdfResult = await pdfService.convertMarkdownToPDF(report.AIAnalysis);
+        // 调用系统内置PDF渲染服务
+        const pdfResult = await reportPdfService.convertMarkdownToPDF(markdownForPdf, {
+            title: `${report.CustomerName}-治疗总结报告`
+        });
 
         if (pdfResult.success) {
             res.json({

@@ -398,14 +398,18 @@ class ReportsManager {
                     </div>
                 </div>
                 <div class="flex space-x-2">
+                    ${['health_assessment', 'comparison_report', 'treatment_summary'].includes(report.type) ? `
+                    <button onclick="reportsManager.downloadPdfVersionReport('${report.id}')"
+                            class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                        <i class="fas fa-file-pdf mr-1"></i>下载PDF版本报告
+                    </button>
+                    ` : ''}
+                    ${report.type === 'treatment_summary' ? `
                     <button onclick="reportsManager.downloadOriginalMarkdown('${report.id}')"
                             class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
                         <i class="fas fa-file-alt mr-1"></i>下载原始文档
                     </button>
-                    <button onclick="reportsManager.convertToPdf('${report.id}')"
-                            class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
-                        <i class="fas fa-file-pdf mr-1"></i>转换PDF
-                    </button>
+                    ` : ''}
                     <button onclick="reportsManager.deleteReport('${report.id}')"
                             class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
                         <i class="fas fa-trash mr-1"></i>删除
@@ -595,30 +599,21 @@ class ReportsManager {
         return;
       }
 
+      if (report.type === 'health_assessment' || report.type === 'comparison_report') {
+        await this.downloadPdfVersionReport(id);
+        return;
+      }
+
+      if (report.type !== 'treatment_summary') {
+        NotificationHelper.warning('当前报告类型仅支持PDF下载');
+        return;
+      }
+
       let markdownContent = '';
       let filename = '';
 
-      // 根据报告类型获取AIAnalysis字段内容
-      if (report.type === 'health_assessment') {
-        // 调用健康评估API获取完整数据
-        console.log('下载Markdown - 调用健康评估API');
-        const response = await window.API.service.get(`/reports/health-assessment/${id}`);
-        console.log('下载Markdown - 健康评估API响应:', response);
-        if (response.status === 'Success' && response.data.AIAnalysis) {
-          markdownContent = response.data.AIAnalysis;
-          filename = `${report.customer_name}-健康评估报告-${new Date(report.date).toISOString().split('T')[0]}.md`;
-        }
-      } else if (report.type === 'comparison_report') {
-        // 调用对比报告API获取完整数据
-        console.log('下载Markdown - 调用对比报告API');
-        const response = await window.API.service.get(`/reports/comparison/${id}`);
-        console.log('下载Markdown - 对比报告API响应:', response);
-        if (response.status === 'Success' && response.data.AIAnalysis) {
-          markdownContent = response.data.AIAnalysis;
-          filename = `${report.customer_name}-健康对比分析报告-${new Date(report.date).toISOString().split('T')[0]}.md`;
-        }
-      } else if (report.type === 'treatment_summary') {
-        // 调用治疗总结API获取完整数据
+      // 仅保留治疗总结报告的Markdown下载
+      if (report.type === 'treatment_summary') {
         console.log('下载Markdown - 调用治疗总结API');
         const response = await window.API.service.get(`/reports/treatment-summary/${id}`);
         console.log('下载Markdown - 治疗总结API响应:', response);
@@ -651,36 +646,36 @@ class ReportsManager {
     }
   }
 
-  // 转换为PDF并下载
-  async convertToPdf(id) {
+  // 下载PDF版本报告
+  async downloadPdfVersionReport(id) {
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
 
     try {
       const report = this.reports.find(r => r.id === id);
-      console.log('转换PDF - 报告信息:', report);
+      console.log('下载PDF版本报告 - 报告信息:', report);
       if (!report) {
         NotificationHelper.error('报告不存在');
         return;
       }
 
-      loadingNotification = NotificationHelper.loading('正在转换PDF...');
+      loadingNotification = NotificationHelper.loading('正在准备下载PDF版本报告，请稍候...');
 
       let response;
 
       // 根据报告类型调用不同的转换API
       if (report.type === 'health_assessment') {
-        console.log('转换PDF - 调用健康评估API');
+        console.log('下载PDF版本报告 - 调用健康评估API');
         response = await window.API.service.post(`/reports/health-assessment/${id}/convert-pdf`);
-        console.log('转换PDF - 健康评估API响应:', response);
+        console.log('下载PDF版本报告 - 健康评估API响应:', response);
       } else if (report.type === 'comparison_report') {
-        console.log('转换PDF - 调用对比报告API');
+        console.log('下载PDF版本报告 - 调用对比报告API');
         response = await window.API.service.post(`/reports/comparison/${id}/convert-pdf`);
-        console.log('转换PDF - 对比报告API响应:', response);
+        console.log('下载PDF版本报告 - 对比报告API响应:', response);
       } else if (report.type === 'treatment_summary') {
-        console.log('转换PDF - 调用治疗总结API');
+        console.log('下载PDF版本报告 - 调用治疗总结API');
         response = await window.API.service.post(`/reports/treatment-summary/${id}/convert-pdf`);
-        console.log('转换PDF - 治疗总结API响应:', response);
+        console.log('下载PDF版本报告 - 治疗总结API响应:', response);
       }
 
       // 关闭加载提示
@@ -709,12 +704,12 @@ class ReportsManager {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        NotificationHelper.success('PDF转换并下载成功');
+        NotificationHelper.success('PDF版本报告下载成功');
       } else {
-        NotificationHelper.error(response.message || 'PDF转换失败');
+        NotificationHelper.error(response.message || '下载PDF版本报告失败');
       }
     } catch (error) {
-      console.error('转换PDF失败:', error);
+      console.error('下载PDF版本报告失败:', error);
 
       // 关闭加载提示
       if (loadingNotification) {
@@ -722,7 +717,7 @@ class ReportsManager {
         loadingNotification = null;
       }
 
-      NotificationHelper.error('转换PDF失败，请稍后重试');
+      NotificationHelper.error('下载PDF版本报告失败，请稍后重试');
     }
   }
 
@@ -733,8 +728,8 @@ class ReportsManager {
 
     modalContainer.innerHTML = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <div class="p-6 border-b border-gray-200">
+                <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+                    <div class="p-6 border-b border-gray-200 flex-shrink-0">
                         <div class="flex justify-between items-center">
                             <h3 class="text-lg font-medium text-gray-900">${report.name || report.title || '未命名报告'}</h3>
                             <button onclick="reportsManager.closeModal()" class="text-gray-400 hover:text-gray-600">
@@ -742,7 +737,7 @@ class ReportsManager {
                             </button>
                         </div>
                     </div>
-                    <div class="p-6">
+                    <div class="p-6 modal-body-scroll flex-1">
                         <!-- 报告信息 -->
                         <div class="bg-gray-50 rounded-lg p-4 mb-6">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -765,9 +760,10 @@ class ReportsManager {
                         <div class="prose max-w-none">
                             <div class="whitespace-pre-wrap">${report.content}</div>
                         </div>
-
+                    </div>
+                    <div class="p-6 border-t border-gray-200 flex-shrink-0">
                         <!-- 操作按钮 -->
-                        <div class="flex justify-end space-x-3 mt-6">
+                        <div class="flex justify-end space-x-3">
                             <button onclick="reportsManager.downloadReport('${report.id}')"
                                     class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                                 <i class="fas fa-download mr-2"></i>下载报告
@@ -1068,9 +1064,9 @@ class ReportsManager {
 
     modalContainer.innerHTML = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] flex flex-col">
                     <!-- 头部 -->
-                    <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                    <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center space-x-3">
                                 <i class="fas fa-file-medical text-2xl text-blue-600"></i>
@@ -1086,7 +1082,7 @@ class ReportsManager {
                     </div>
 
                     <!-- 内容区域 -->
-                    <div class="flex-1 overflow-y-auto">
+                    <div class="modal-body-scroll flex-1">
                         <div class="p-6">
                             <!-- 报告基本信息卡片 -->
                             <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border border-blue-100">
@@ -1214,7 +1210,7 @@ class ReportsManager {
                     </div>
 
                     <!-- 底部操作栏 -->
-                    <div class="p-6 border-t border-gray-200 bg-gray-50">
+                    <div class="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
                         <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
                             <div class="text-sm text-gray-500">
                                 <i class="fas fa-info-circle mr-1"></i>
@@ -1226,16 +1222,9 @@ class ReportsManager {
                                 <!-- PDF下载按钮 -->
                                 <button onclick="reportsManager.downloadPDF('${report.ID}')"
                                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                                        title="转换为PDF格式并下载">
+                                        title="下载PDF版本报告">
                                     <i class="fas fa-file-pdf mr-2"></i>
-                                    转换PDF
-                                </button>
-
-                                <!-- Markdown下载按钮 -->
-                                <button onclick="reportsManager.downloadMarkdown('${report.ID}')"
-                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                    <i class="fas fa-file-alt mr-2"></i>
-                                    下载原始文档
+                                    下载PDF版本报告
                                 </button>
                                 ` : ''}
 
@@ -1259,8 +1248,8 @@ class ReportsManager {
     let loadingNotification = null;
 
     try {
-      // 显示转换提示
-      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+      // 显示下载提示
+      loadingNotification = NotificationHelper.loading('正在准备下载PDF版本报告，请稍候...');
 
       // 调用后端PDF转换API
       const response = await window.API.service.post(`/reports/health-assessment/${reportId}/convert-pdf`);
@@ -1275,7 +1264,7 @@ class ReportsManager {
         const { pdfData, fileName } = response.data;
 
         if (!pdfData) {
-          NotificationHelper.error('PDF数据为空，转换失败');
+          NotificationHelper.error('PDF版本报告数据为空，下载失败');
           return;
         }
 
@@ -1304,12 +1293,12 @@ class ReportsManager {
           URL.revokeObjectURL(url);
         }, 100);
 
-        NotificationHelper.success(`PDF文件已成功下载：${fileName}`);
+        NotificationHelper.success(`PDF版本报告已成功下载：${fileName}`);
       } else {
-        NotificationHelper.error(response.message || 'PDF转换失败');
+        NotificationHelper.error(response.message || '下载PDF版本报告失败');
       }
     } catch (error) {
-      console.error('PDF转换失败:', error);
+      console.error('下载PDF版本报告失败:', error);
 
       // 关闭加载提示
       if (loadingNotification) {
@@ -1318,11 +1307,11 @@ class ReportsManager {
       }
 
       // 根据错误类型显示不同的提示
-      let errorMessage = 'PDF转换失败，请稍后重试';
+      let errorMessage = '下载PDF版本报告失败，请稍后重试';
       if (error.message && error.message.includes('503')) {
-        errorMessage = 'PDF转换服务不可用，请稍后重试';
+        errorMessage = 'PDF服务不可用，请稍后重试';
       } else if (error.message && error.message.includes('timeout')) {
-        errorMessage = 'PDF转换超时，请稍后重试';
+        errorMessage = 'PDF处理超时，请稍后重试';
       } else if (error.message && error.message.includes('network')) {
         errorMessage = '网络连接失败，请检查网络设置';
       }
@@ -1331,56 +1320,9 @@ class ReportsManager {
     }
   }
 
-  // 下载Markdown原始文档
-  async downloadMarkdown(reportId) {
-    try {
-      // 显示下载提示
-      NotificationHelper.info('正在准备下载健康评估报告...', '下载中');
-
-      // 获取报告详情
-      const response = await window.API.service.get(`/reports/health-assessment/${reportId}`);
-
-      if (response.status === 'Success' && response.data) {
-        const report = response.data;
-        const content = report.AIAnalysis || '';
-        const medicalExamId = report.MedicalExamId || reportId;
-
-        if (!content) {
-          NotificationHelper.error('报告内容为空，无法下载');
-          return;
-        }
-
-        // 使用原始JS方式创建和下载文件
-        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${medicalExamId}.md`;
-
-        // 兼容不同浏览器
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // 清理URL对象
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 100);
-
-        NotificationHelper.success(`健康评估报告已成功下载：${medicalExamId}.md`);
-      } else {
-        NotificationHelper.error('获取报告数据失败');
-      }
-    } catch (error) {
-      console.error('下载健康评估报告失败:', error);
-      NotificationHelper.error('下载失败，请稍后重试');
-    }
-  }
-
-  // 保留原有的下载方法以兼容旧代码
+  // 保留原有方法名以兼容旧代码（改为PDF下载）
   async downloadHealthAssessment(reportId) {
-    await this.downloadMarkdown(reportId);
+    await this.downloadPDF(reportId);
   }
 
   // 生成单次报告
@@ -2964,13 +2906,9 @@ class ReportsManager {
                     <!-- 操作按钮 -->
                     <div class="p-6 border-t border-gray-200 bg-gray-50">
                         <div class="flex justify-end space-x-3">
-                            <button onclick="reportsManager.downloadComparisonReport('${report.ID}')"
-                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                <i class="fas fa-download mr-2"></i>下载Markdown
-                            </button>
                             <button onclick="reportsManager.downloadComparisonPDF('${report.ID}')"
                                     class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                                <i class="fas fa-file-pdf mr-2"></i>下载PDF
+                                <i class="fas fa-file-pdf mr-2"></i>下载PDF版本报告
                             </button>
                             <button onclick="reportsManager.closeModal()"
                                     class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -2983,40 +2921,13 @@ class ReportsManager {
         `;
   }
 
-  // 下载对比报告
-  async downloadComparisonReport(reportId) {
-    try {
-      const response = await window.API.service.get(`/reports/comparison/${reportId}/download`);
-
-      if (response.status === 'Success') {
-        // 创建下载链接
-        const blob = new Blob([response.data], { type: 'text/markdown;charset=utf-8' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `健康对比分析报告_${new Date().toISOString().split('T')[0]}.md`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        NotificationHelper.success('报告下载成功');
-      } else {
-        NotificationHelper.error('下载失败');
-      }
-    } catch (error) {
-      console.error('下载对比报告失败:', error);
-      NotificationHelper.error('下载失败');
-    }
-  }
-
   // 下载对比报告PDF
   async downloadComparisonPDF(reportId) {
     // 将 loadingNotification 声明在 try 块外部，确保 catch 块可以访问
     let loadingNotification = null;
 
     try {
-      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+      loadingNotification = NotificationHelper.loading('正在准备下载PDF版本报告，请稍候...');
 
       const response = await window.API.service.post(`/reports/comparison/${reportId}/convert-pdf`);
 
@@ -3048,12 +2959,12 @@ class ReportsManager {
           URL.revokeObjectURL(url);
         }
 
-        NotificationHelper.success('PDF下载成功');
+        NotificationHelper.success('PDF版本报告下载成功');
       } else {
-        NotificationHelper.error(response.message || 'PDF转换失败');
+        NotificationHelper.error(response.message || '下载PDF版本报告失败');
       }
     } catch (error) {
-      console.error('下载PDF失败:', error);
+      console.error('下载PDF版本报告失败:', error);
 
       // 关闭加载提示
       if (loadingNotification) {
@@ -3061,7 +2972,7 @@ class ReportsManager {
         loadingNotification = null;
       }
 
-      NotificationHelper.error('PDF转换失败，请稍后重试');
+      NotificationHelper.error('下载PDF版本报告失败，请稍后重试');
     }
   }
 
@@ -3473,9 +3384,9 @@ class ReportsManager {
                 ${report.Status === 'completed' && report.AIAnalysis ? `
                 <button onclick="reportsManager.downloadTreatmentSummaryPDF('${report.ID}')"
                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                        title="转换为PDF格式并下载">
+                        title="下载PDF版本报告">
                   <i class="fas fa-file-pdf mr-2"></i>
-                  转换PDF
+                  下载PDF版本报告
                 </button>
                 <button onclick="reportsManager.downloadTreatmentSummaryMarkdown('${report.ID}')"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
@@ -3501,7 +3412,7 @@ class ReportsManager {
     let loadingNotification = null;
 
     try {
-      loadingNotification = NotificationHelper.loading('正在转换为PDF格式，请稍候...');
+      loadingNotification = NotificationHelper.loading('正在准备下载PDF版本报告，请稍候...');
 
       const response = await window.API.service.post(`/reports/treatment-summary/${reportId}/convert-pdf`);
 
@@ -3539,19 +3450,19 @@ class ReportsManager {
           URL.revokeObjectURL(url);
         }, 100);
 
-        NotificationHelper.success(`PDF文件已成功下载：${fileName}`);
+        NotificationHelper.success(`PDF版本报告已成功下载：${fileName}`);
       } else {
-        NotificationHelper.error(response.message || 'PDF转换失败');
+        NotificationHelper.error(response.message || '下载PDF版本报告失败');
       }
     } catch (error) {
-      console.error('PDF转换失败:', error);
+      console.error('下载PDF版本报告失败:', error);
 
       if (loadingNotification) {
         loadingNotification.remove();
         loadingNotification = null;
       }
 
-      NotificationHelper.error('PDF转换失败，请稍后重试');
+      NotificationHelper.error('下载PDF版本报告失败，请稍后重试');
     }
   }
 
