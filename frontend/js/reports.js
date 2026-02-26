@@ -404,12 +404,6 @@ class ReportsManager {
                         <i class="fas fa-file-pdf mr-1"></i>下载PDF版本报告
                     </button>
                     ` : ''}
-                    ${report.type === 'treatment_summary' ? `
-                    <button onclick="reportsManager.downloadOriginalMarkdown('${report.id}')"
-                            class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                        <i class="fas fa-file-alt mr-1"></i>下载原始文档
-                    </button>
-                    ` : ''}
                     <button onclick="reportsManager.deleteReport('${report.id}')"
                             class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
                         <i class="fas fa-trash mr-1"></i>删除
@@ -3387,11 +3381,6 @@ class ReportsManager {
                         title="下载PDF版本报告">
                   <i class="fas fa-file-pdf mr-2"></i>
                   下载PDF版本报告
-                </button>
-                <button onclick="reportsManager.downloadTreatmentSummaryMarkdown('${report.ID}')"
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                  <i class="fas fa-file-alt mr-2"></i>
-                  下载原始文档
                 </button>
                 ` : ''}
                 <button onclick="reportsManager.closeModal()"

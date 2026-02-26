@@ -398,6 +398,69 @@ class SingleReportPdfService {
         return /异常|偏高|偏低|阳性|可疑/.test(content);
     }
 
+    getSummaryLines(summary) {
+        return String(summary || '')
+            .replace(/\r/g, '\n')
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+    }
+
+    isImagingDepartment(departmentName) {
+        const name = String(departmentName || '').trim();
+        if (!name) { return false; }
+        return /(彩超|放射|影像|骨密度|心电)/.test(name);
+    }
+
+    parseSummaryDetailItem(line) {
+        const cleanLine = String(line || '')
+            .replace(/^[\-•*]\s*/, '')
+            .trim();
+
+        if (!cleanLine) {
+            return null;
+        }
+
+        let splitIndex = cleanLine.indexOf('：');
+        if (splitIndex < 0) {
+            splitIndex = cleanLine.indexOf(':');
+        }
+
+        if (splitIndex > 0) {
+            const itemName = cleanLine.slice(0, splitIndex).trim();
+            const itemResult = cleanLine.slice(splitIndex + 1).trim();
+            if (itemName && itemResult) {
+                return {
+                    itemName,
+                    itemResult,
+                    isContinuation: false
+                };
+            }
+        }
+
+        return {
+            itemName: '',
+            itemResult: cleanLine,
+            isContinuation: true
+        };
+    }
+
+    hasDepartmentDisplayContent(dept) {
+        if (!dept) { return false; }
+
+        const hasSummary = this.getSummaryLines(dept.summary).length > 0;
+
+        if (dept.department === '检验科') {
+            const categories = Array.isArray(dept.labCategories) ? dept.labCategories : [];
+            const hasLabItems = categories.some((category) => Array.isArray(category.items) && category.items.length > 0);
+            return hasSummary || hasLabItems;
+        }
+
+        const items = Array.isArray(dept.items) ? dept.items : [];
+        const hasItems = items.length > 0;
+        return hasSummary || hasItems;
+    }
+
     collectAbnormalItems(departments) {
         const result = [];
         if (!Array.isArray(departments)) {
@@ -496,8 +559,16 @@ class SingleReportPdfService {
         lines.push('## 科室检查结果');
         lines.push('');
 
-        for (let i = 0; i < departments.length; i++) {
-            const dept = departments[i];
+        const displayDepartments = departments.filter((dept) => this.hasDepartmentDisplayContent(dept));
+        if (displayDepartments.length === 0) {
+            lines.push('- 本次体检暂无可展示的科室明细。');
+            lines.push('');
+        }
+
+        for (let i = 0; i < displayDepartments.length; i++) {
+            const dept = displayDepartments[i];
+            const summaryLines = this.getSummaryLines(dept.summary);
+            let summaryText = summaryLines.join('；');
             lines.push(`### ${i + 1}. ${dept.department}`);
             lines.push('');
 
@@ -513,10 +584,7 @@ class SingleReportPdfService {
 
             if (dept.department === '检验科') {
                 const categories = Array.isArray(dept.labCategories) ? dept.labCategories : [];
-                if (categories.length === 0) {
-                    lines.push('- 暂无检验科明细数据。');
-                    lines.push('');
-                } else {
+                if (categories.length > 0) {
                     for (let j = 0; j < categories.length; j++) {
                         const category = categories[j];
                         lines.push(`#### ${category.categoryName}`);
@@ -534,22 +602,54 @@ class SingleReportPdfService {
                 }
             } else {
                 const items = Array.isArray(dept.items) ? dept.items : [];
-                if (items.length === 0) {
-                    lines.push('- 暂无该科室明细数据。');
-                    lines.push('');
-                } else {
+                let displayItems = items;
+
+                if (items.length === 0 && this.isImagingDepartment(dept.department) && summaryLines.length > 1) {
+                    const parsedItems = [];
+                    for (let j = 1; j < summaryLines.length; j++) {
+                        const parsedItem = this.parseSummaryDetailItem(summaryLines[j]);
+                        if (parsedItem) {
+                            if (parsedItem.isContinuation) {
+                                const appendText = parsedItem.itemResult || '';
+                                if (appendText && parsedItems.length > 0) {
+                                    const lastItem = parsedItems[parsedItems.length - 1];
+                                    lastItem.itemResult = lastItem.itemResult
+                                        ? `${lastItem.itemResult}；${appendText}`
+                                        : appendText;
+                                } else if (appendText) {
+                                    summaryText = summaryText
+                                        ? `${summaryText}；${appendText}`
+                                        : appendText;
+                                }
+                                continue;
+                            }
+
+                            parsedItems.push({
+                                itemName: parsedItem.itemName,
+                                itemResult: parsedItem.itemResult
+                            });
+                        }
+                    }
+
+                    if (parsedItems.length > 0) {
+                        displayItems = parsedItems;
+                        summaryText = summaryLines[0];
+                    }
+                }
+
+                if (displayItems.length > 0) {
                     lines.push('| 检查项目 | 检查结果 |');
                     lines.push('| --- | --- |');
-                    for (let j = 0; j < items.length; j++) {
-                        const item = items[j];
+                    for (let j = 0; j < displayItems.length; j++) {
+                        const item = displayItems[j];
                         lines.push(`| ${this.escapeMarkdownCell(item.itemName)} | ${this.escapeMarkdownCell(item.itemResult)} |`);
                     }
                     lines.push('');
                 }
             }
 
-            if (dept.summary) {
-                lines.push(`> 科室小结：${dept.summary}`);
+            if (summaryText) {
+                lines.push(`> 科室小结：${summaryText}`);
                 lines.push('');
             }
 

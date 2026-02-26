@@ -12,6 +12,8 @@ const { authLimiter, generalLimiter } = require('./src/middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '127.0.0.1';
+const BACKUP_PORT = process.env.BACKUP_PORT || 8080;
 const RATE_LIMIT_ENABLED = (process.env.RATE_LIMIT_ENABLED || 'false').toLowerCase() === 'true';
 
 // 服务器启动时间（用于健康检查）
@@ -464,6 +466,18 @@ app.use((err, req, res, next) => {
 });
 
 // ==================== 启动服务器 ====================
+function listenWithPromise(port, host) {
+    return new Promise((resolve, reject) => {
+        const server = app.listen(port, host, () => {
+            resolve({ server, port });
+        });
+
+        server.once('error', (error) => {
+            reject(error);
+        });
+    });
+}
+
 async function startServer() {
     try {
         // 启动前安全配置校验
@@ -472,21 +486,41 @@ async function startServer() {
         // 初始化系统设置
         await initializeSystemSettings();
 
-        const server = app.listen(PORT, '0.0.0.0', () => {
-            console.log('========================================');
-            console.log('  干细胞治疗档案管理系统');
-            console.log('========================================');
-            console.log(`🚀 服务器运行在端口 ${PORT}`);
-            console.log(`📱 健康检查: http://127.0.0.1:${PORT}/health`);
-            console.log(`🌐 前端页面: http://127.0.0.1:${PORT}/login.html`);
-            console.log(`📡 API 接口: http://127.0.0.1:${PORT}/api/`);
-            console.log(`⚙️ 系统设置已初始化并支持持久化存储`);
-            console.log('========================================');
+        const primaryPort = Number(PORT);
+        const backupPort = Number(BACKUP_PORT);
+        let listenResult;
 
-            // 启动自动导入服务
-            const autoImportService = require('./src/services/autoImportService');
-            autoImportService.start();
-        });
+        try {
+            listenResult = await listenWithPromise(primaryPort, HOST);
+        } catch (error) {
+            const canFallback =
+                (error.code === 'EACCES' || error.code === 'EADDRINUSE') &&
+                backupPort !== primaryPort;
+
+            if (!canFallback) {
+                throw error;
+            }
+
+            console.warn(`⚠️ 端口 ${primaryPort} 不可用(${error.code})，自动切换到端口 ${backupPort}`);
+            listenResult = await listenWithPromise(backupPort, HOST);
+        }
+
+        const { server, port: activePort } = listenResult;
+
+        console.log('========================================');
+        console.log('  干细胞治疗档案管理系统');
+        console.log('========================================');
+        console.log(`🌍 监听地址: ${HOST}`);
+        console.log(`🚀 服务器运行在端口 ${activePort}`);
+        console.log(`📱 健康检查: http://127.0.0.1:${activePort}/health`);
+        console.log(`🌐 前端页面: http://127.0.0.1:${activePort}/login.html`);
+        console.log(`📡 API 接口: http://127.0.0.1:${activePort}/api/`);
+        console.log(`⚙️ 系统设置已初始化并支持持久化存储`);
+        console.log('========================================');
+
+        // 启动自动导入服务
+        const autoImportService = require('./src/services/autoImportService');
+        autoImportService.start();
 
         return server;
     } catch (error) {
