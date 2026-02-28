@@ -1242,6 +1242,18 @@ class ReportsManager {
     let loadingNotification = null;
 
     try {
+      // 兼容历史调用：若传入的是报告列表中的其他类型，则走对应类型的下载逻辑
+      const reportInList = this.reports.find((r) => String(r.id) === String(reportId));
+      if (reportInList && reportInList.type && reportInList.type !== 'health_assessment') {
+        if (reportInList.type === 'single') {
+          NotificationHelper.warning('单次报告请在“单次报告”模块选择体检记录后生成下载');
+          return;
+        }
+
+        await this.downloadPdfVersionReport(reportId);
+        return;
+      }
+
       // 显示下载提示
       loadingNotification = NotificationHelper.loading('正在准备下载PDF版本报告，请稍候...');
 
@@ -1741,8 +1753,8 @@ class ReportsManager {
       });
     }
 
-    // 初始化默认报告类型（对比报告）
-    this.selectReportType('comparison');
+    // 初始化默认报告类型（单次报告）
+    this.selectReportType('single');
 
     // 确保日期框格式一致
     this.ensureDateInputConsistency();
