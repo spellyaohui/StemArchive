@@ -14,6 +14,20 @@ class CustomersManager {
     this.init();
   }
 
+  escapeHtml(value) {
+    if (window.Utils && typeof window.Utils.escapeHtml === 'function') {
+      return window.Utils.escapeHtml(value);
+    }
+
+    if (value === null || value === undefined) {return '';}
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   init() {
     this.loadCustomers();
     this.bindEvents();
@@ -134,7 +148,7 @@ class CustomersManager {
 
       if (result.status === 'Success') {
         this.customers = result.data || [];
-        this.totalCustomers = this.customers.length; // 临时修复：使用当前数据长度作为总数
+        this.totalCustomers = result.pagination?.total || this.customers.length;
         this.renderCustomersList();
         this.renderPagination(result.pagination);
         this.updatePaginationInfo(); // 确保更新分页信息显示
@@ -146,7 +160,7 @@ class CustomersManager {
       console.error('加载检客列表失败:', error);
       if (error.message.includes('fetch') || error.message.includes('network')) {
         NotificationHelper.networkError('无法加载检客列表，请检查网络连接', () => {
-          customers.loadCustomers(); // 重试加载
+          this.loadCustomers(); // 重试加载
         });
       } else {
         NotificationHelper.error('加载检客列表失败，请刷新页面重试', '数据加载错误');
@@ -172,30 +186,40 @@ class CustomersManager {
       return;
     }
 
-    container.innerHTML = this.customers.map(customer => `
+    container.innerHTML = this.customers.map(customer => {
+      const customerId = this.escapeHtml(customer.ID || '');
+      const customerName = this.escapeHtml(customer.Name || customer.name || '');
+      const gender = customer.Gender === '男' || customer.gender === 'male' ? '男' : '女';
+      const age = this.escapeHtml(customer.Age || customer.age || '');
+      const identityCard = this.escapeHtml(customer.IdentityCard || customer.identityCard || customer.id_card || '');
+      const identityCardAttr = String(customer.IdentityCard || customer.identityCard || customer.id_card || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+      const phone = this.escapeHtml(customer.Phone || customer.phone || '无');
+      const contactPerson = this.escapeHtml(customer.ContactPerson || customer.contactPerson || '无');
+
+      return `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                             <i class="fas fa-user text-blue-600 text-sm"></i>
                         </div>
-                        <div class="font-medium text-gray-900">${customer.Name || customer.name}</div>
+                        <div class="font-medium text-gray-900">${customerName}</div>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${customer.Gender === '男' || customer.gender === 'male' ? '男' : '女'}
+                    ${gender}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${customer.Age || customer.age}
+                    ${age}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${customer.IdentityCard || customer.identityCard || customer.id_card}
+                    ${identityCard}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${customer.Phone || customer.phone || '无'}
+                    ${phone}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${customer.ContactPerson || customer.contactPerson || '无'}
+                    ${contactPerson}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${this.getStatusClass(customer.Status || customer.status)}">
@@ -203,21 +227,22 @@ class CustomersManager {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="customersManager.viewCustomer('${customer.ID}')" class="text-blue-600 hover:text-blue-900 mr-2" title="查看详情">
+                    <button onclick="customersManager.viewCustomer('${customerId}')" class="text-blue-600 hover:text-blue-900 mr-2" title="查看详情">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="customersManager.editCustomer('${customer.ID}')" class="text-green-600 hover:text-green-900 mr-2" title="编辑">
+                    <button onclick="customersManager.editCustomer('${customerId}')" class="text-green-600 hover:text-green-900 mr-2" title="编辑">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="customersManager.fetchExaminationData('${customer.ID}', '${customer.IdentityCard || customer.identityCard || customer.id_card}')" class="text-purple-600 hover:text-purple-900 mr-2" title="获取体检数据">
+                    <button onclick="customersManager.fetchExaminationData('${customerId}', '${identityCardAttr}')" class="text-purple-600 hover:text-purple-900 mr-2" title="获取体检数据">
                         <i class="fas fa-file-medical"></i>
                     </button>
-                    <button onclick="customersManager.deleteCustomer('${customer.ID}')" class="text-red-600 hover:text-red-900" title="删除">
+                    <button onclick="customersManager.deleteCustomer('${customerId}')" class="text-red-600 hover:text-red-900" title="删除">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `;
+    }).join('');
 
     // 更新分页信息
     this.updatePaginationInfo();
@@ -485,6 +510,18 @@ class CustomersManager {
     const isView = mode === 'view';
     const isEdit = mode === 'edit';
     const isAdd = mode === 'add';
+    const escapedName = this.escapeHtml(customer?.Name || customer?.name || '');
+    const escapedAge = this.escapeHtml(customer?.Age || customer?.age || '');
+    const escapedIdentityCard = this.escapeHtml(customer?.IdentityCard || customer?.identityCard || customer?.id_card || '');
+    const escapedPhone = this.escapeHtml(customer?.Phone || customer?.phone || '');
+    const escapedContactPerson = this.escapeHtml(customer?.ContactPerson || customer?.contact_person || '');
+    const escapedContactPersonPhone = this.escapeHtml(customer?.ContactPersonPhone || customer?.contact_phone || '');
+    const escapedHeight = this.escapeHtml(customer?.Height || customer?.height || '');
+    const escapedWeight = this.escapeHtml(customer?.Weight || customer?.weight || '');
+    const escapedAddress = this.escapeHtml(customer?.Address || customer?.address || '');
+    const escapedRemarks = this.escapeHtml(customer?.Remarks || customer?.remarks || '');
+    const escapedCustomerId = this.escapeHtml(customer?.ID || 'N/A');
+    const escapedBMI = this.escapeHtml(customer?.BMI || 'N/A');
 
     modalContainer.innerHTML = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -498,7 +535,7 @@ class CustomersManager {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2 required-label">姓名</label>
-                                <input type="text" name="name" value="${customer?.Name || customer?.name || ''}"
+                                <input type="text" name="name" value="${escapedName}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''} required>
                             </div>
@@ -513,14 +550,14 @@ class CustomersManager {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">年龄</label>
-                                <input type="number" name="age" value="${customer?.Age || customer?.age || ''}"
+                                <input type="number" name="age" value="${escapedAge}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        min="0" max="150" title="请输入0-150之间的年龄"
                                        ${isView ? 'readonly' : ''}>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2 required-label">身份证号</label>
-                                <input type="text" name="id_card" value="${customer?.IdentityCard || customer?.identityCard || customer?.id_card || ''}"
+                                <input type="text" name="id_card" value="${escapedIdentityCard}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        pattern="[0-9]{15}|[0-9]{17}[0-9Xx]"
                                        title="请输入正确的15~18位身份证号"
@@ -529,7 +566,7 @@ class CustomersManager {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2 required-label">联系电话</label>
-                                <input type="tel" name="phone" value="${customer?.Phone || customer?.phone || ''}"
+                                <input type="tel" name="phone" value="${escapedPhone}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        pattern="[0-9]{11}"
                                        title="请输入11位手机号"
@@ -538,31 +575,31 @@ class CustomersManager {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">联系人</label>
-                                <input type="text" name="contact_person" value="${customer?.ContactPerson || customer?.contact_person || ''}"
+                                <input type="text" name="contact_person" value="${escapedContactPerson}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''}>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">联系人电话</label>
-                                <input type="tel" name="contact_phone" value="${customer?.ContactPersonPhone || customer?.contact_phone || ''}"
+                                <input type="tel" name="contact_phone" value="${escapedContactPersonPhone}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''}>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">身高 (cm)</label>
-                                <input type="number" name="height" value="${customer?.Height || customer?.height || ''}"
+                                <input type="number" name="height" value="${escapedHeight}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''} step="0.1">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">体重 (kg)</label>
-                                <input type="number" name="weight" value="${customer?.Weight || customer?.weight || ''}"
+                                <input type="number" name="weight" value="${escapedWeight}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''} step="0.1">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">地址</label>
-                                <input type="text" name="address" value="${customer?.Address || customer?.address || ''}"
+                                <input type="text" name="address" value="${escapedAddress}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        ${isView ? 'readonly' : ''}>
                             </div>
@@ -571,7 +608,7 @@ class CustomersManager {
                             <label class="block text-sm font-medium text-gray-700 mb-2">备注</label>
                             <textarea name="notes" rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      ${isView ? 'readonly' : ''}>${customer?.Remarks || customer?.remarks || ''}</textarea>
+                                      ${isView ? 'readonly' : ''}>${escapedRemarks}</textarea>
                         </div>
                         ${isView ? `
                         <div class="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -579,11 +616,11 @@ class CustomersManager {
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <span class="text-gray-600">客户ID:</span>
-                                    <span class="font-medium ml-2">${customer?.ID || 'N/A'}</span>
+                                    <span class="font-medium ml-2">${escapedCustomerId}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-600">BMI:</span>
-                                    <span class="font-medium ml-2">${customer?.BMI || 'N/A'}</span>
+                                    <span class="font-medium ml-2">${escapedBMI}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-600">状态:</span>
@@ -1098,11 +1135,6 @@ class CustomersManager {
 
 // 创建全局实例
 const customersManager = new CustomersManager();
-
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-  customersManager.init();
-});
 
 // 暴露到全局作用域，供HTML调用
 window.customersManager = customersManager;

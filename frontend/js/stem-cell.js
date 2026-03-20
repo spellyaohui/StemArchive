@@ -2414,10 +2414,5 @@ ${schedules.map(s => `• ${s.CustomerName} (${s.PatientNumber}) - 当前: ${s.C
 // 创建全局实例
 const stemCellManager = new StemCellManager();
 
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-  stemCellManager.init();
-});
-
 // 暴露到全局作用域，供HTML调用
 window.stemCellManager = stemCellManager;

@@ -85,13 +85,25 @@ const executeQuery = async (query, params = []) => {
 
     const result = await request.query(query);
 
-    // 对于SELECT查询，返回recordset
-    // 对于INSERT/UPDATE/DELETE查询，返回完整result对象（包含rowsAffected）
-    if (query.trim().toLowerCase().startsWith('select')) {
-      return result.recordset;
-    } else {
-      return result;
-    }
+    const primaryRecordset = Array.isArray(result.recordset) ? result.recordset : [];
+    const allRecordsets = Array.isArray(result.recordsets) && result.recordsets.length > 0
+      ? result.recordsets
+      : [primaryRecordset];
+
+    // 向后兼容：
+    // 1) 大量调用方直接把返回值当数组使用（result[0] / result.length）
+    // 2) 也有调用方依赖 result.recordset / result.rowsAffected 元数据
+    const mergedRows = allRecordsets.length > 1
+      ? allRecordsets.flat()
+      : primaryRecordset;
+
+    return Object.assign(mergedRows, {
+      recordset: primaryRecordset,
+      recordsets: allRecordsets,
+      rowsAffected: result.rowsAffected || [],
+      output: result.output || {},
+      returnValue: result.returnValue
+    });
   } catch (error) {
     console.error('查询执行失败:', error);
     throw error;

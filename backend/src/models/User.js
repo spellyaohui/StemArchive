@@ -45,18 +45,35 @@ class User {
      */
     static async initDefaultUsers() {
         try {
+            const isProduction = process.env.NODE_ENV === 'production';
+            const initDefaultAdmin = (process.env.INIT_DEFAULT_ADMIN || (isProduction ? 'false' : 'true')).toLowerCase() === 'true';
+
+            if (!initDefaultAdmin) {
+                console.log('ℹ️ 已跳过默认管理员初始化（INIT_DEFAULT_ADMIN=false）');
+                return null;
+            }
+
+            const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+            if (!defaultAdminPassword || defaultAdminPassword.length < 12) {
+                throw new Error('DEFAULT_ADMIN_PASSWORD未配置或强度不足（至少12位）');
+            }
+
+            const defaultAdminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+            const defaultAdminName = process.env.DEFAULT_ADMIN_NAME || '系统管理员';
+            const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@system.com';
+
             // 检查是否已存在管理员用户
-            const existingAdmin = await this.findByUsername('admin');
+            const existingAdmin = await this.findByUsername(defaultAdminUsername);
             if (existingAdmin) {
                 console.log('✅ 默认管理员用户已存在');
                 return existingAdmin;
             }
 
             // 创建默认管理员
-            const hashedPassword = await bcrypt.hash('admin123', 12);
+            const hashedPassword = await bcrypt.hash(defaultAdminPassword, 12);
             const insertSQL = `
                 INSERT INTO Users (username, password, name, email, role, status)
-                VALUES ('admin', @password, '系统管理员', 'admin@system.com', 'admin', 'active');
+                VALUES (@username, @password, @name, @email, 'admin', 'active');
 
                 SELECT SCOPE_IDENTITY() as id, username, name, email, role, status, created_at, updated_at
                 FROM Users
@@ -64,7 +81,10 @@ class User {
             `;
 
             const result = await executeQuery(insertSQL, [
-                { name: 'password', value: hashedPassword }
+                { name: 'username', value: defaultAdminUsername },
+                { name: 'password', value: hashedPassword },
+                { name: 'name', value: defaultAdminName },
+                { name: 'email', value: defaultAdminEmail }
             ]);
 
             if (result.length > 0) {

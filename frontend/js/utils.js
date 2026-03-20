@@ -146,6 +146,17 @@ class Utils {
         return `<span class="${color}">${bmi} (${category})</span>`;
     }
 
+    // HTML转义，防止将不可信内容直接写入innerHTML时触发XSS
+    static escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     // 脱敏处理身份证号
     static maskIdCard(idCard) {
         if (!idCard || idCard.length < 8) return idCard;

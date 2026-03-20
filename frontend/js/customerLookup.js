@@ -14,6 +14,20 @@ class CustomerLookup {
     console.log('✓ 检客档案查找模块已初始化');
   }
 
+  escapeHtml(value) {
+    if (window.Utils && typeof window.Utils.escapeHtml === 'function') {
+      return window.Utils.escapeHtml(value);
+    }
+
+    if (value === null || value === undefined) {return '';}
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
      * 根据身份证号查找检客档案
      * @param {string} identityCard - 身份证号
@@ -22,9 +36,7 @@ class CustomerLookup {
   async lookupCustomer(identityCard) {
     try {
       console.log(`🔍 正在查找检客档案: ${identityCard}`);
-
-      const response = await fetch(`${CONFIG.api.baseURL}/customers/identity/${identityCard}`);
-      const result = await response.json();
+      const result = await window.API.service.get(`/customers/identity/${encodeURIComponent(identityCard)}`);
 
       if (result.status === 'Success') {
         this.currentCustomer = result.data;
@@ -50,9 +62,10 @@ class CustomerLookup {
   async validateCustomer(identityCard, operationType = 'General') {
     try {
       console.log(`🔍 正在验证检客档案: ${identityCard} (操作: ${operationType})`);
-
-      const response = await fetch(`${CONFIG.api.baseURL}/customers/validate/${identityCard}?operationType=${operationType}`);
-      const result = await response.json();
+      const result = await window.API.service.get(
+        `/customers/validate/${encodeURIComponent(identityCard)}`,
+        { operationType }
+      );
 
       if (result.status === 'Success') {
         console.log('✓ 检客档案验证结果:', result.data.isValid ? '通过' : '失败');
@@ -75,9 +88,7 @@ class CustomerLookup {
   async checkDuplicate(identityCard) {
     try {
       console.log(`🔍 正在检查身份证号重复: ${identityCard}`);
-
-      const response = await fetch(`${CONFIG.api.baseURL}/customers/check-duplicate/${identityCard}`);
-      const result = await response.json();
+      const result = await window.API.service.get(`/customers/check-duplicate/${encodeURIComponent(identityCard)}`);
 
       if (result.status === 'Success') {
         console.log('✓ 身份证号检查完成, 是否存在:', result.data.exists);
@@ -100,9 +111,7 @@ class CustomerLookup {
   async getCustomerStatistics(identityCard) {
     try {
       console.log(`🔍 正在获取检客统计信息: ${identityCard}`);
-
-      const response = await fetch(`${CONFIG.api.baseURL}/customers/statistics/${identityCard}`);
-      const result = await response.json();
+      const result = await window.API.service.get(`/customers/statistics/${encodeURIComponent(identityCard)}`);
 
       if (result.status === 'Success') {
         console.log('✓ 检客统计信息获取成功');
@@ -319,6 +328,17 @@ class CustomerLookup {
     };
 
     const levelClass = completenessLevelColor[profileCompleteness.level] || 'text-gray-600 bg-gray-100';
+    const safeName = this.escapeHtml(customerInfo.name || '未填写');
+    const safeGender = this.escapeHtml(customerInfo.gender || '未填写');
+    const safeAge = this.escapeHtml(customerInfo.age || '未填写');
+    const safeIdentityCard = this.escapeHtml(customerInfo.identityCard || '未填写');
+    const safePhone = this.escapeHtml(customerInfo.phone || '未填写');
+    const safeLevel = this.escapeHtml(profileCompleteness.level || '基础');
+    const safeScore = Number(profileCompleteness.score || 0);
+    const safeHealthAssessments = Number(statistics.healthAssessments || 0);
+    const safeStemCellTreatments = Number(statistics.stemCellTreatments || 0);
+    const safeReports = Number(statistics.reports || 0);
+    const safeTotalInfusions = Number(statistics.totalInfusions || 0);
 
     resultsDiv.innerHTML = `
             <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -337,28 +357,28 @@ class CustomerLookup {
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
                             <span class="text-gray-500">姓名：</span>
-                            <span class="font-medium">${customerInfo.name}</span>
+                            <span class="font-medium">${safeName}</span>
                         </div>
                         <div>
                             <span class="text-gray-500">性别：</span>
-                            <span class="font-medium">${customerInfo.gender}</span>
+                            <span class="font-medium">${safeGender}</span>
                         </div>
                         <div>
                             <span class="text-gray-500">年龄：</span>
-                            <span class="font-medium">${customerInfo.age || '未填写'}</span>
+                            <span class="font-medium">${safeAge}</span>
                         </div>
                         <div>
                             <span class="text-gray-500">身份证号：</span>
-                            <span class="font-medium">${customerInfo.identityCard}</span>
+                            <span class="font-medium">${safeIdentityCard}</span>
                         </div>
                         <div>
                             <span class="text-gray-500">联系电话：</span>
-                            <span class="font-medium">${customerInfo.phone || '未填写'}</span>
+                            <span class="font-medium">${safePhone}</span>
                         </div>
                         <div>
                             <span class="text-gray-500">档案完整性：</span>
                             <span class="px-2 py-1 rounded-full text-xs font-medium ${levelClass}">
-                                ${profileCompleteness.level} (${profileCompleteness.score}%)
+                                ${safeLevel} (${safeScore}%)
                             </span>
                         </div>
                     </div>
@@ -371,22 +391,22 @@ class CustomerLookup {
                     </h4>
                     <div class="grid grid-cols-3 gap-4 text-sm">
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-blue-600">${statistics.healthAssessments}</div>
+                            <div class="text-2xl font-bold text-blue-600">${safeHealthAssessments}</div>
                             <div class="text-gray-500">健康评估</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600">${statistics.stemCellTreatments}</div>
+                            <div class="text-2xl font-bold text-green-600">${safeStemCellTreatments}</div>
                             <div class="text-gray-500">干细胞治疗</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-purple-600">${statistics.reports}</div>
+                            <div class="text-2xl font-bold text-purple-600">${safeReports}</div>
                             <div class="text-gray-500">检查报告</div>
                         </div>
                     </div>
-                    ${statistics.totalInfusions > 0 ? `
+                    ${safeTotalInfusions > 0 ? `
                         <div class="mt-3 text-center">
                             <span class="text-gray-500">累计回输：</span>
-                            <span class="font-medium text-orange-600">${statistics.totalInfusions} 次</span>
+                            <span class="font-medium text-orange-600">${safeTotalInfusions} 次</span>
                         </div>
                     ` : ''}
                 </div>

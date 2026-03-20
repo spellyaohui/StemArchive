@@ -202,7 +202,15 @@ router.get('/check-duplicate/:identityCard', async (req, res) => {
         const query = `
             SELECT
                 dbo.CheckCustomerExists(@identityCard) as Exists,
-                (SELECT TOP 1 ID, Name FROM Customers WHERE IdentityCard = @identityCard) as CustomerInfo
+                c.ID as CustomerID,
+                c.Name as CustomerName
+            FROM (SELECT 1 as Dummy) d
+            LEFT JOIN (
+                SELECT TOP 1 ID, Name
+                FROM Customers
+                WHERE IdentityCard = @identityCard
+                ORDER BY CreatedAt DESC
+            ) c ON 1 = 1;
         `;
 
         const params = [{ name: 'identityCard', value: identityCard, type: sql.NVarChar }];
@@ -225,10 +233,10 @@ router.get('/check-duplicate/:identityCard', async (req, res) => {
             status: 'Success',
             message: '身份证号检查完成',
             data: {
-                exists: check.Exists,
-                customerInfo: check.Exists ? {
-                    id: check.CustomerInfo.ID,
-                    name: check.CustomerInfo.Name
+                exists: Boolean(check.Exists),
+                customerInfo: check.CustomerID ? {
+                    id: check.CustomerID,
+                    name: check.CustomerName
                 } : null
             }
         });

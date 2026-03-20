@@ -365,7 +365,7 @@ class CustomerController {
       const { checkDate } = req.body;
 
       // 使用存储过程更新最后体检日期
-      const { executeQuery } = require('../../../config/database');
+      const { executeQuery } = require('../../config/database');
       const query = `
         EXEC sp_UpdateCustomerLastHealthCheckDate @IdentityCard, @CheckDate
       `;
@@ -375,8 +375,11 @@ class CustomerController {
         { name: 'CheckDate', value: checkDate, type: require('mssql').Date }
       ]);
 
-      // 存储过程返回的是更新行数
-      const updatedRows = result && result[0] ? result[0] : 0;
+      const updatedRows =
+        (Array.isArray(result?.rowsAffected) && result.rowsAffected[0]) ||
+        result?.[0]?.UpdatedRows ||
+        result?.[0]?.updatedRows ||
+        0;
 
       res.json({
         status: 'Success',

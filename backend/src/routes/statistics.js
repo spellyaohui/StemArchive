@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { executeQuery, sql } = require('../../config/database');
+const { requireAdmin } = require('../middleware/auth');
+
+const ENABLE_STATISTICS_TEST_ENDPOINT =
+    process.env.ENABLE_STATISTICS_TEST_ENDPOINT === 'true' ||
+    process.env.ENABLE_DEBUG_ROUTES === 'true';
 
 const DATE_PARAM_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const CUSTOMER_PROFILE_SORT_MAP = {
@@ -705,8 +710,15 @@ router.get('/comprehensive', async (req, res) => {
 });
 
 // 测试API - 验证数据库连接和表存在
-router.get('/test', async (req, res) => {
+router.get('/test', requireAdmin, async (req, res) => {
     try {
+        if (!ENABLE_STATISTICS_TEST_ENDPOINT) {
+            return res.status(404).json({
+                status: 'Error',
+                message: '资源不存在'
+            });
+        }
+
         // 测试基本查询
         const customerCount = await executeQuery('SELECT COUNT(*) as total FROM Customers');
         const infusionCount = await executeQuery('SELECT COUNT(*) as total FROM InfusionSchedules');

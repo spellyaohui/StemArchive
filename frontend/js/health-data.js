@@ -320,8 +320,3 @@ class HealthDataManager {
 
 // 创建全局实例
 const healthDataManager = new HealthDataManager();
-
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-  healthDataManager.init();
-});

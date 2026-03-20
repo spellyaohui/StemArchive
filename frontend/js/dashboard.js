@@ -9,6 +9,20 @@ class Dashboard {
     this.init();
   }
 
+  escapeHtml(value) {
+    if (window.Utils && typeof window.Utils.escapeHtml === 'function') {
+      return window.Utils.escapeHtml(value);
+    }
+
+    if (value === null || value === undefined) {return '';}
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   init() {
     this.loadDashboardData();
     this.initCharts();
@@ -73,7 +87,7 @@ class Dashboard {
       console.error('加载仪表板数据失败:', error);
       if (error.message.includes('fetch') || error.message.includes('network')) {
         NotificationHelper.networkError('无法加载仪表板数据，请检查网络连接', () => {
-          dashboard.init(); // 重试加载
+          this.loadDashboardData(); // 重试加载
         });
       } else {
         NotificationHelper.error('加载仪表板数据失败，请刷新页面重试', '数据加载错误');
@@ -133,6 +147,8 @@ class Dashboard {
     container.innerHTML = schedules.map(schedule => {
       const parsedDate = Utils.parseDbDateTime(schedule.ScheduleDate);
       const time = parsedDate ? Utils.formatDate(parsedDate, 'HH:mm') : '未知时间';
+      const safeCustomerName = this.escapeHtml(schedule.CustomerName || '未知客户');
+      const safeTreatmentType = this.escapeHtml(schedule.TreatmentType || '未知类型');
 
       return `
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -141,8 +157,8 @@ class Dashboard {
                             <i class="fas fa-user text-blue-600"></i>
                         </div>
                         <div>
-                            <p class="font-medium text-gray-800">${schedule.CustomerName || '未知客户'}</p>
-                            <p class="text-sm text-gray-600">${schedule.TreatmentType || '未知类型'}</p>
+                            <p class="font-medium text-gray-800">${safeCustomerName}</p>
+                            <p class="text-sm text-gray-600">${safeTreatmentType}</p>
                         </div>
                     </div>
                     <div class="text-right">
@@ -314,7 +330,7 @@ class Dashboard {
     if (diseases && diseases.length > 0) {
       container.innerHTML = diseases.map(disease => `
         <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-          <span class="text-sm font-medium text-gray-700">${disease.name}</span>
+          <span class="text-sm font-medium text-gray-700">${this.escapeHtml(disease.name)}</span>
           <div class="flex items-center space-x-2">
             <span class="text-sm font-semibold text-indigo-600">${disease.count}例</span>
             <span class="text-xs text-gray-500">(${disease.percentage}%)</span>
@@ -338,7 +354,7 @@ class Dashboard {
 
         return `
           <div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-            <span class="text-sm font-medium text-gray-700">${effect.type}</span>
+            <span class="text-sm font-medium text-gray-700">${this.escapeHtml(effect.type)}</span>
             <div class="flex items-center space-x-2">
               <span class="text-sm font-semibold text-teal-600">${effect.count}例</span>
               <span class="text-xs text-gray-500">(${effect.percentage}%)</span>

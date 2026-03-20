@@ -16,6 +16,20 @@ class ReportsManager {
     this.eventsBound = false; // 防止重复绑定事件监听器
   }
 
+  escapeHtml(value) {
+    if (window.Utils && typeof window.Utils.escapeHtml === 'function') {
+      return window.Utils.escapeHtml(value);
+    }
+
+    if (value === null || value === undefined) {return '';}
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   init() {
     this.bindEvents();
     // 异步加载关键数据，不阻塞页面渲染
@@ -89,27 +103,30 @@ class ReportsManager {
 
     resultsContainer.innerHTML = customers.map(customer => {
       // 创建唯一的容器ID
-      const containerId = `customer-${customer.ID}`;
+      const containerId = `customer-${this.escapeHtml(customer.ID)}`;
 
       // 安全处理身份证号
       const idCard = customer.IdentityCard || '';
-      const safeIdCard = idCard.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const safeIdCard = this.escapeHtml(idCard);
+      const safeName = this.escapeHtml(customer.Name || '');
+      const safeGender = this.escapeHtml(customer.Gender || '');
+      const safePhone = this.escapeHtml(customer.Phone || '');
 
       return `
             <div class="customer-result-item p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                  id="${containerId}"
-                 data-customer-id="${customer.ID}"
-                 data-customer-name="${(customer.Name || '').replace(/"/g, '&quot;')}"
+                 data-customer-id="${this.escapeHtml(customer.ID)}"
+                 data-customer-name="${safeName}"
                  data-customer-idcard="${safeIdCard}">
                 <div class="flex items-center">
                     <div class="mr-3">
-                        <div class="w-4 h-4 border-2 border-gray-300 rounded-full radio-custom ${customer.ID === this.selectedCustomer?.id ? 'bg-blue-600 border-blue-600' : ''}"></div>
+                        <div class="w-4 h-4 border-2 border-gray-300 rounded-full radio-custom ${String(customer.ID) === String(this.selectedCustomer?.id) ? 'bg-blue-600 border-blue-600' : ''}"></div>
                     </div>
                     <div class="flex-1">
-                        <div class="font-medium text-gray-900">${customer.Name}</div>
-                        <div class="text-sm text-gray-600">身份证号: ${customer.IdentityCard}</div>
-                        ${customer.Gender ? `<div class="text-xs text-gray-500">性别: ${customer.Gender}</div>` : ''}
-                        ${customer.Phone ? `<div class="text-xs text-gray-500">电话: ${customer.Phone}</div>` : ''}
+                        <div class="font-medium text-gray-900">${safeName}</div>
+                        <div class="text-sm text-gray-600">身份证号: ${safeIdCard}</div>
+                        ${customer.Gender ? `<div class="text-xs text-gray-500">性别: ${safeGender}</div>` : ''}
+                        ${customer.Phone ? `<div class="text-xs text-gray-500">电话: ${safePhone}</div>` : ''}
                     </div>
                     <div class="text-blue-600 opacity-0 hover:opacity-100 transition-opacity">
                         <i class="fas fa-check-circle"></i>
@@ -382,35 +399,43 @@ class ReportsManager {
       return;
     }
 
-    container.innerHTML = this.reports.map(report => `
+    container.innerHTML = this.reports.map(report => {
+      const safeId = this.escapeHtml(report.id);
+      const safeTitle = this.escapeHtml(report.name || report.title || '未命名报告');
+      const safeCustomerName = this.escapeHtml(report.customer_name || '未知客户');
+      const safeDate = this.escapeHtml(this.formatDateTime(report.created_date || report.date || '未知日期'));
+      const safeTypeText = this.escapeHtml(this.getReportTypeText(report.type));
+
+      return `
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div class="flex items-center space-x-4">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                         <i class="fas ${this.getReportIcon(report.type)} text-blue-600"></i>
                     </div>
                     <div>
-                        <h4 class="font-medium text-gray-900">${report.name || report.title || '未命名报告'}</h4>
+                        <h4 class="font-medium text-gray-900">${safeTitle}</h4>
                         <div class="flex items-center space-x-4 text-sm text-gray-600">
-                            <span><i class="fas fa-user mr-1"></i>${report.customer_name || '未知客户'}</span>
-                            <span><i class="fas fa-calendar mr-1"></i>${this.formatDateTime(report.created_date || report.date || '未知日期')}</span>
-                            <span><i class="fas fa-tag mr-1"></i>${this.getReportTypeText(report.type)}</span>
+                            <span><i class="fas fa-user mr-1"></i>${safeCustomerName}</span>
+                            <span><i class="fas fa-calendar mr-1"></i>${safeDate}</span>
+                            <span><i class="fas fa-tag mr-1"></i>${safeTypeText}</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex space-x-2">
                     ${['health_assessment', 'comparison_report', 'treatment_summary'].includes(report.type) ? `
-                    <button onclick="reportsManager.downloadPdfVersionReport('${report.id}')"
+                    <button onclick="reportsManager.downloadPdfVersionReport('${safeId}')"
                             class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
                         <i class="fas fa-file-pdf mr-1"></i>下载PDF版本报告
                     </button>
                     ` : ''}
-                    <button onclick="reportsManager.deleteReport('${report.id}')"
+                    <button onclick="reportsManager.deleteReport('${safeId}')"
                             class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
                         <i class="fas fa-trash mr-1"></i>删除
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+    }).join('');
   }
 
   // 获取报告图标

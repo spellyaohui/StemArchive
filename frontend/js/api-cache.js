@@ -8,12 +8,37 @@ class APICache {
         this.cache = new Map();
         this.ongoingRequests = new Map(); // 防止重复请求
         this.defaultTTL = 5 * 60 * 1000; // 5分钟缓存
+        this.hitCount = 0;
+        this.missCount = 0;
+    }
+
+    // 构建完整URL（包含排序后的查询参数，保证缓存键稳定）
+    buildUrl(url, params = {}) {
+        const entries = Object.entries(params || {})
+            .filter(([, value]) => value !== undefined && value !== null && value !== '');
+
+        if (entries.length === 0) {
+            return url;
+        }
+
+        const searchParams = new URLSearchParams();
+        entries
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach(item => searchParams.append(key, item));
+                    return;
+                }
+                searchParams.append(key, String(value));
+            });
+
+        const joiner = url.includes('?') ? '&' : '?';
+        return `${url}${joiner}${searchParams.toString()}`;
     }
 
     // 生成缓存键
-    generateKey(url, params = {}) {
-        const paramStr = JSON.stringify(params);
-        return `${url}:${paramStr}`;
+    generateKey(url) {
+        return url;
     }
 
     // 检查缓存是否有效
@@ -23,32 +48,42 @@ class APICache {
 
     // 获取缓存数据
     get(url, params = {}) {
-        const key = this.generateKey(url, params);
+        const requestUrl = this.buildUrl(url, params);
+        const key = this.generateKey(requestUrl);
         const cacheItem = this.cache.get(key);
 
         if (this.isValid(cacheItem)) {
-            console.log(`📦 从缓存获取: ${url}`);
+            this.hitCount++;
+            console.log(`📦 从缓存获取: ${requestUrl}`);
             return cacheItem.data;
         }
 
+        this.missCount++;
+        if (cacheItem) {
+            this.cache.delete(key);
+        }
         return null;
     }
 
     // 设置缓存
     set(url, data, ttl = this.defaultTTL, params = {}) {
-        const key = this.generateKey(url, params);
+        const requestUrl = this.buildUrl(url, params);
+        const key = this.generateKey(requestUrl);
         this.cache.set(key, {
             data,
             timestamp: Date.now(),
             ttl
         });
-        console.log(`💾 缓存数据: ${url} (TTL: ${ttl/1000}s)`);
+        console.log(`💾 缓存数据: ${requestUrl} (TTL: ${ttl/1000}s)`);
     }
 
     // 带缓存的请求方法
     async cachedFetch(url, options = {}, ttl = this.defaultTTL) {
         const params = options.params || {};
-        const key = this.generateKey(url, params);
+        const requestUrl = this.buildUrl(url, params);
+        const key = this.generateKey(requestUrl);
+        const requestOptions = { ...options };
+        delete requestOptions.params;
 
         // 检查缓存
         const cachedData = this.get(url, params);
@@ -58,13 +93,13 @@ class APICache {
 
         // 检查是否有正在进行的相同请求
         if (this.ongoingRequests.has(key)) {
-            console.log(`⏳ 等待正在进行的请求: ${url}`);
+            console.log(`⏳ 等待正在进行的请求: ${requestUrl}`);
             return await this.ongoingRequests.get(key);
         }
 
         // 发起新请求
-        console.log(`🌐 发起新请求: ${url}`);
-        const requestPromise = this.makeRequest(url, options, ttl, params);
+        console.log(`🌐 发起新请求: ${requestUrl}`);
+        const requestPromise = this.makeRequest(requestUrl, requestOptions, ttl, params);
         this.ongoingRequests.set(key, requestPromise);
 
         try {
@@ -95,9 +130,10 @@ class APICache {
 
     // 清除特定缓存
     clear(url, params = {}) {
-        const key = this.generateKey(url, params);
+        const requestUrl = this.buildUrl(url, params);
+        const key = this.generateKey(requestUrl);
         this.cache.delete(key);
-        console.log(`🗑️ 清除缓存: ${url}`);
+        console.log(`🗑️ 清除缓存: ${requestUrl}`);
     }
 
     // 清除所有缓存
@@ -119,10 +155,13 @@ class APICache {
 
     // 获取缓存统计
     getStats() {
+        const total = this.hitCount + this.missCount;
         return {
             cacheSize: this.cache.size,
             ongoingRequests: this.ongoingRequests.size,
-            hitRate: this.hitCount / (this.hitCount + this.missCount) || 0
+            hitCount: this.hitCount,
+            missCount: this.missCount,
+            hitRate: total > 0 ? this.hitCount / total : 0
         };
     }
 }

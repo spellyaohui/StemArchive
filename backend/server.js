@@ -7,14 +7,16 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-const { authMiddleware } = require('./src/middleware/auth');
+const { authMiddleware, requireAdmin } = require('./src/middleware/auth');
 const { authLimiter, generalLimiter } = require('./src/middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 const BACKUP_PORT = process.env.BACKUP_PORT || 8080;
-const RATE_LIMIT_ENABLED = (process.env.RATE_LIMIT_ENABLED || 'false').toLowerCase() === 'true';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const RATE_LIMIT_ENABLED = (process.env.RATE_LIMIT_ENABLED || (IS_PRODUCTION ? 'true' : 'false')).toLowerCase() === 'true';
+const ENABLE_DEBUG_ROUTES = process.env.ENABLE_DEBUG_ROUTES === 'true';
 
 // 服务器启动时间（用于健康检查）
 const serverStartTime = new Date();
@@ -124,12 +126,14 @@ const corsOptions = {
         
         // 生产环境：只允许同源或配置的来源
         const allowedOrigins = process.env.ALLOWED_ORIGINS 
-            ? process.env.ALLOWED_ORIGINS.split(',') 
+            ? process.env.ALLOWED_ORIGINS.split(',').map(item => item.trim()).filter(Boolean)
             : [];
-        
-        const allAllowedOrigins = [...devOrigins, ...allowedOrigins];
-        
-        if (allAllowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+
+        const finalAllowedOrigins = IS_PRODUCTION
+            ? allowedOrigins
+            : [...devOrigins, ...allowedOrigins];
+
+        if (finalAllowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('不允许的跨域请求来源'));
@@ -209,8 +213,15 @@ app.use('/api/auto-import', require('./src/routes/autoImport'));
 app.use('/api', require('./src/routes/thirdPartyExamination'));
 
 // 测试输注排期查询
-app.get('/api/test-schedules', async (req, res) => {
+app.get('/api/test-schedules', requireAdmin, async (req, res) => {
   try {
+    if (!ENABLE_DEBUG_ROUTES) {
+      return res.status(404).json({
+        status: 'Error',
+        message: '资源不存在'
+      });
+    }
+
     const { executeQuery } = require('./config/database');
 
     const testQuery = `
